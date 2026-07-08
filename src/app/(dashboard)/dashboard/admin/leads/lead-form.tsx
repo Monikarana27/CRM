@@ -1,0 +1,144 @@
+"use client";
+
+import { useActionState, useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowLeft } from "lucide-react";
+
+const SOURCE_OPTIONS = ["Website", "Justdial", "Referral", "Walk-in", "Phone Inquiry", "Other"];
+const STATUS_OPTIONS = ["NEW", "CONTACTED", "CONVERTED", "PENDING", "CLOSED"];
+
+interface LeadFormProps {
+  mode: "create" | "edit";
+  defaultValues?: {
+    name: string;
+    phone: string;
+    email: string | null;
+    source: string | null;
+    status: string;
+    notes: string | null;
+  };
+  action: (prevState: unknown, formData: FormData) => Promise<{ error: string | null }>;
+}
+
+export function LeadForm({ mode, defaultValues, action }: LeadFormProps) {
+  const [state, formAction, isPending] = useActionState(action, { error: null });
+  const [source, setSource] = useState(defaultValues?.source ?? "");
+  const [status, setStatus] = useState(defaultValues?.status ?? "NEW");
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <form action={formAction} className="space-y-5">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                name="name"
+                defaultValue={defaultValues?.name}
+                placeholder="e.g. Rahul Sharma"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                name="phone"
+                defaultValue={defaultValues?.phone}
+                placeholder="+91 98765 43210"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                defaultValue={defaultValues?.email ?? ""}
+                placeholder="rahul@example.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Source</Label>
+              <Select value={source} onValueChange={setSource}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select source" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SOURCE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {opt}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <input type="hidden" name="source" value={source} />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {opt}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <input type="hidden" name="status" value={status} />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes</Label>
+            <textarea
+              id="notes"
+              name="notes"
+              defaultValue={defaultValues?.notes ?? ""}
+              rows={4}
+              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            />
+          </div>
+
+          {state?.error && (
+            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {state.error}
+            </p>
+          )}
+
+          <div className="flex items-center gap-3 pt-2">
+            <Button type="submit" disabled={isPending}>
+              {isPending ? "Saving..." : mode === "create" ? "Create Lead" : "Save Changes"}
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/admin/leads">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Cancel
+              </Link>
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}

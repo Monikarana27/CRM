@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SALES
+  SERVICE
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(SALES)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  activityLogs ActivityLog[] @relation("ActorLogs")
+  assignedProfiles Profile[]     @relation("AssignedProfiles")
+  assignedLeads    Lead[]        @relation("AssignedLeads")
+
+  @@index([role])
+  @@index([email])
+  @@map("users")
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  action     String
+  entityType String
+  entityId   String
+  createdAt  DateTime @default(now())
+
+  actor User @relation("ActorLogs", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+enum ProfileStatus {
+  UNASSIGNED
+  ASSIGNED
+  REASSIGNED
+  ON_HOLD
+  EXPIRED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+model Profile {
+  id            String        @id @default(cuid())
+  profileCode   String        @unique
+
+  // Source
+  source        String?
+  sourceInfo    String?
+
+  // Contact
+  email         String?
+  altEmail      String?
+  phone         String
+  altPhone      String?
+  contactPerson String?
+  creatingFor   String?
+
+  // Basic Info
+  name          String
+  gender        Gender
+  dob           DateTime?
+  maritalStatus String?
+  height        String?
+  weightKg      Float?
+  motherTongue  String?
+  bodyType      String?
+  complexion    String?
+  bloodGroup    String?
+  healthStatus  String?
+  nativePlace   String?
+  aboutYourself String?       @db.Text
+
+  // Location
+  country       String?
+  state         String?
+  city          String?
+  citizenship   String?
+  countryGrewUp String?
+  visaStatus    String?
+
+  // Religion & Horoscope
+  religion      String?
+  caste         String?
+  subCaste      String?
+  gotra         String?
+  timeOfBirth   String?
+  placeOfBirth  String?
+  manglik       String?
+
+  // Education & Career
+  highestQualification String?
+  educationField       String?
+  institute            String?
+  workLocation         String?
+  workingWith          String?
+  profession           String?
+  businessName         String?
+  designation          String?
+  annualIncome         String?
+
+  // Lifestyle
+  diet          String?
+  drinking      String?
+  smoking       String?
+
+  // Family
+  fatherOccupation      String?
+  motherOccupation      String?
+  brothers              Int?     @default(0)
+  brothersMarried       Int?     @default(0)
+  sisters               Int?     @default(0)
+  sistersMarried        Int?     @default(0)
+  familyType            String?
+  affluence             String?
+  familyValues          String?
+  familyBio             String?  @db.Text
+  familyAnnualIncome    String?
+
+  photoUrl      String?
+
+  // Status & assignment
+  status        ProfileStatus @default(UNASSIGNED)
+  assignedToId  String?
+  assignedTo    User?         @relation("AssignedProfiles", fields: [assignedToId], references: [id])
+  assignedAt    DateTime?
+  convertedFromLead Lead?     
+
+  createdById   String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  partnerPreference PartnerPreference?
+
+  @@index([status])
+  @@index([assignedToId])
+  @@index([phone])
+  @@index([profileCode])
+  @@map("profiles")
+}
+
+model PartnerPreference {
+  id          String   @id @default(cuid())
+  profileId   String   @unique
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  minAge        Int?
+  maxAge        Int?
+  minHeight     String?
+  maxHeight     String?
+
+  maritalStatus String?
+  motherTongue  String?
+  religion      String?
+  caste         String?
+  manglikStatus String?
+  hasChildrenOk String?
+
+  country       String?
+  state         String?
+  city          String?
+
+  qualification String?
+  workingWith   String?
+  profession    String?
+  annualIncome  String?
+
+  diet          String?
+  drinking      String?
+  smoking       String?
+
+  aboutDesiredPartner String? @db.Text
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("partner_preferences")
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  CONVERTED
+  PENDING
+  CLOSED
+}
+
+model Lead {
+  id          String     @id @default(cuid())
+  name        String
+  phone       String
+  email       String?
+  source      String?
+  status      LeadStatus @default(NEW)
+  notes       String?    @db.Text
+
+  assignedToId String?
+  assignedTo   User?      @relation("AssignedLeads", fields: [assignedToId], references: [id])
+
+  convertedProfileId String? @unique
+  convertedProfile   Profile? @relation(fields: [convertedProfileId], references: [id])
+
+  createdById String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([status])
+  @@index([assignedToId])
+  @@index([phone])
+  @@map("leads")
+}
