@@ -2,7 +2,6 @@ import { auth } from "@/lib/auth/auth";
 import { StatWidget } from "@/components/widgets/stat-widget";
 import { DashboardHero } from "@/components/layout/dashboard-hero";
 import { getSalesStats } from "@/lib/stats/dashboard-stats";
-import { Contact, UserSquare2, CalendarClock } from "lucide-react";
 
 export default async function SalesDashboardPage() {
   const session = await auth();
@@ -17,21 +16,21 @@ export default async function SalesDashboardPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <StatWidget
           title="My Leads"
-          value={stats.myLeads}
-          icon={Contact}
-          colorClass="bg-blue-50 text-blue-600"
+          lines={[{ label: "Assigned to Me", value: stats.myLeads }]}
+          actionLabel="View Leads"
+          actionHref="/dashboard/sales/leads"
         />
         <StatWidget
           title="My Profiles"
-          value={stats.myProfiles}
-          icon={UserSquare2}
-          colorClass="bg-violet-50 text-violet-600"
+          lines={[{ label: "Assigned to Me", value: stats.myProfiles }]}
+          actionLabel="View Profiles"
+          actionHref="/dashboard/sales/profiles"
         />
         <StatWidget
           title="Follow-ups Due"
-          value={stats.followUpsDue}
-          icon={CalendarClock}
-          colorClass="bg-amber-50 text-amber-600"
+          lines={[{ label: "Scheduled", value: stats.followUpsDue }]}
+          actionLabel="View Follow-ups"
+          actionHref="/dashboard/sales/follow-ups"
         />
       </div>
     </div>

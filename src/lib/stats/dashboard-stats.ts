@@ -1,15 +1,68 @@
 import { prisma } from "@/lib/db/prisma";
 
 export async function getAdminStats() {
-  const [totalLeads, activeEmployees, pendingPayments, activeServices] =
-    await Promise.all([
-      prisma.lead.count(),
-      prisma.user.count({ where: { active: true } }),
-      prisma.payment.count({ where: { status: "PENDING" } }),
-      prisma.service.count({ where: { status: "ACTIVE" } }),
-    ]);
+  const [
+    totalLeads,
+    newLeads,
+    contactedLeads,
+    convertedLeads,
+    pendingLeads,
+    closedLeads,
+    totalProfiles,
+    maleProfiles,
+    femaleProfiles,
+    profilesOnHold,
+    activeEmployees,
+    totalEmployees,
+    activeServices,
+    holdServices,
+    expiredServices,
+    paidPayments,
+    pendingPayments,
+    failedPayments,
+    faceToFaceMeetings,
+    teleMeetings,
+  ] = await Promise.all([
+    prisma.lead.count(),
+    prisma.lead.count({ where: { status: "NEW" } }),
+    prisma.lead.count({ where: { status: "CONTACTED" } }),
+    prisma.lead.count({ where: { status: "CONVERTED" } }),
+    prisma.lead.count({ where: { status: "PENDING" } }),
+    prisma.lead.count({ where: { status: "CLOSED" } }),
+    prisma.profile.count(),
+    prisma.profile.count({ where: { gender: "MALE" } }),
+    prisma.profile.count({ where: { gender: "FEMALE" } }),
+    prisma.profile.count({ where: { status: "ON_HOLD" } }),
+    prisma.user.count({ where: { active: true } }),
+    prisma.user.count(),
+    prisma.service.count({ where: { status: "ACTIVE" } }),
+    prisma.service.count({ where: { status: "HOLD" } }),
+    prisma.service.count({ where: { status: "EXPIRED" } }),
+    prisma.payment.count({ where: { status: "PAID" } }),
+    prisma.payment.count({ where: { status: "PENDING" } }),
+    prisma.payment.count({ where: { status: "FAILED" } }),
+    prisma.meeting.count({ where: { type: "FACE_TO_FACE" } }),
+    prisma.meeting.count({ where: { type: "TELE" } }),
+  ]);
 
-  return { totalLeads, activeEmployees, pendingPayments, activeServices };
+  const paidAmountResult = await prisma.payment.aggregate({
+    where: { status: "PAID" },
+    _sum: { amount: true },
+  });
+
+  return {
+    leads: { totalLeads, newLeads, contactedLeads, convertedLeads, pendingLeads, closedLeads },
+    profiles: { totalProfiles, maleProfiles, femaleProfiles, profilesOnHold },
+    employees: { activeEmployees, totalEmployees },
+    services: { activeServices, holdServices, expiredServices },
+    payments: {
+      paidPayments,
+      pendingPayments,
+      failedPayments,
+      totalCollected: paidAmountResult._sum.amount ?? 0,
+    },
+    meetings: { faceToFaceMeetings, teleMeetings },
+  };
 }
 
 export async function getSalesStats(userId: string) {

@@ -2,7 +2,6 @@ import { auth } from "@/lib/auth/auth";
 import { StatWidget } from "@/components/widgets/stat-widget";
 import { DashboardHero } from "@/components/layout/dashboard-hero";
 import { getServiceStats } from "@/lib/stats/dashboard-stats";
-import { UserSquare2, CalendarClock, Activity } from "lucide-react";
 
 export default async function ServiceDashboardPage() {
   const session = await auth();
@@ -17,21 +16,21 @@ export default async function ServiceDashboardPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <StatWidget
           title="Assigned Profiles"
-          value={stats.assignedProfiles}
-          icon={UserSquare2}
-          colorClass="bg-violet-50 text-violet-600"
+          lines={[{ label: "Assigned to Me", value: stats.assignedProfiles }]}
+          actionLabel="View Profiles"
+          actionHref="/dashboard/service/profiles"
         />
         <StatWidget
           title="Meetings Today"
-          value={stats.meetingsToday}
-          icon={CalendarClock}
-          colorClass="bg-amber-50 text-amber-600"
+          lines={[{ label: "Scheduled Today", value: stats.meetingsToday }]}
+          actionLabel="View Meetings"
+          actionHref="/dashboard/admin/meetings"
         />
         <StatWidget
-          title="Active Services"
-          value={stats.activeServiceCount}
-          icon={Activity}
-          colorClass="bg-emerald-50 text-emerald-600"
+          title="Service Status"
+          lines={[{ label: "Active Services", value: stats.activeServiceCount }]}
+          actionLabel="View Services"
+          actionHref="/dashboard/admin/services"
         />
       </div>
     </div>
