@@ -22,16 +22,19 @@ export interface NavItem {
 }
 
 export const NAV_CONFIG: Record<Role, NavItem[]> = {
-  ADMIN: [
-    { label: "Dashboard", href: "/dashboard/admin", icon: LayoutDashboard },
-    { label: "Employees", href: "/dashboard/admin/employees", icon: Users },
-    { label: "Profiles", href: "/dashboard/admin/profiles", icon: UserSquare2 },
-    { label: "Leads", href: "/dashboard/admin/leads", icon: Contact },
-    { label: "Assignments", href: "/dashboard/admin/assignments", icon: ClipboardList },
-    { label: "Service", href: "/dashboard/admin/service", icon: HeartHandshake },
-    { label: "Payments", href: "/dashboard/admin/payments", icon: CreditCard },
-    { label: "Settings", href: "/dashboard/admin/settings", icon: Settings },
-  ],
+ ADMIN: [
+  { label: "Dashboard", href: "/dashboard/admin", icon: LayoutDashboard },
+  { label: "Employees", href: "/dashboard/admin/employees", icon: Users },
+  { label: "Profiles", href: "/dashboard/admin/profiles", icon: UserSquare2 },
+  { label: "Leads", href: "/dashboard/admin/leads", icon: Contact },
+  { label: "Assignments", href: "/dashboard/admin/assignments", icon: ClipboardList },
+  { label: "Plans", href: "/dashboard/admin/plans", icon: HeartHandshake },
+  { label: "Services", href: "/dashboard/admin/services", icon: HeartHandshake },
+  { label: "Payments", href: "/dashboard/admin/payments", icon: CreditCard },
+  { label: "Settings", href: "/dashboard/admin/settings", icon: Settings },
+  { label: "Meetings", href: "/dashboard/admin/meetings", icon: CalendarClock },
+  { label: "Activity Logs", href: "/dashboard/admin/activity-logs", icon: Activity },
+],
   SALES: [
     { label: "Dashboard", href: "/dashboard/sales", icon: LayoutDashboard },
     { label: "My Leads", href: "/dashboard/sales/leads", icon: Handshake },
