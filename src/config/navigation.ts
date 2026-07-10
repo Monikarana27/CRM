@@ -11,6 +11,7 @@ import {
   Handshake,
   CalendarClock,
   Activity,
+  PhoneCall,
 } from "lucide-react";
 import type { Role } from "@/lib/permissions/roles";
 import type { LucideIcon } from "lucide-react";
@@ -34,6 +35,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
   { label: "Settings", href: "/dashboard/admin/settings", icon: Settings },
   { label: "Meetings", href: "/dashboard/admin/meetings", icon: CalendarClock },
   { label: "Activity Logs", href: "/dashboard/admin/activity-logs", icon: Activity },
+  { label: "Welcome Calls", href: "/dashboard/admin/welcome-calls", icon: PhoneCall },
 ],
   SALES: [
     { label: "Dashboard", href: "/dashboard/sales", icon: LayoutDashboard },
