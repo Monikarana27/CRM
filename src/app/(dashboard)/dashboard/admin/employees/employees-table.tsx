@@ -3,6 +3,7 @@
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { EmployeeRowActions } from "./employee-row-actions";
+import { ViewAsButton } from "@/components/shared/view-as-button";
 
 type EmployeeRow = {
   id: string;
@@ -59,7 +60,12 @@ export function EmployeesTable({ employees }: { employees: EmployeeRow[] }) {
     {
       key: "actions",
       header: "Actions",
-      render: (row) => <EmployeeRowActions employee={row} />,
+      render: (row) => (
+  <div className="flex items-center gap-2">
+    <EmployeeRowActions employee={row} />
+    <ViewAsButton userId={row.id} />
+  </div>
+),
     },
   ];
 

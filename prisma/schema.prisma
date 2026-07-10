@@ -27,6 +27,7 @@ model User {
   assignedProfiles Profile[]     @relation("AssignedProfiles")
   assignedLeads    Lead[]        @relation("AssignedLeads")
   assignedMeetings Meeting[]     @relation("AssignedMeetings")
+  salesTargets     SalesTarget[] 
 
   @@index([role])
   @@index([email])
@@ -210,6 +211,7 @@ enum LeadStatus {
   CONTACTED
   CONVERTED
   PENDING
+  NOT_INTERESTED
   CLOSED
 }
 
@@ -382,4 +384,22 @@ model CallLog {
 
   @@index([profileId])
   @@map("call_logs")
+}
+
+model SalesTarget {
+  id            String   @id @default(cuid())
+
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  month         Int
+  year          Int
+  targetAmount  Float
+
+  createdById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, month, year])
+  @@map("sales_targets")
 }

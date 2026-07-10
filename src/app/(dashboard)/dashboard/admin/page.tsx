@@ -1,16 +1,13 @@
 import { auth } from "@/lib/auth/auth";
 import { StatWidget } from "@/components/widgets/stat-widget";
+import { FunnelBreakdown } from "@/components/widgets/funnel-breakdown";
+import { ConversionRateCard } from "@/components/widgets/conversion-rate-card";
 import { DashboardHero } from "@/components/layout/dashboard-hero";
 import { getAdminStats } from "@/lib/stats/dashboard-stats";
 
 export default async function AdminDashboardPage() {
   const session = await auth();
   const stats = await getAdminStats();
-
-  const leadsProgress =
-    stats.leads.totalLeads > 0
-      ? (stats.leads.convertedLeads / stats.leads.totalLeads) * 100
-      : 0;
 
   const servicesProgress =
     stats.services.activeServices + stats.services.holdServices + stats.services.expiredServices > 0
@@ -27,6 +24,71 @@ export default async function AdminDashboardPage() {
     stats.employees.totalEmployees > 0
       ? (stats.employees.activeEmployees / stats.employees.totalEmployees) * 100
       : 0;
+
+  const funnelTotal = stats.leads.totalLeads;
+  const profileFunnelTotal =
+    stats.profileAssignment.assigned + stats.profileAssignment.reassigned + stats.profileAssignment.unassigned;
+
+  const funnelRows = [
+    {
+      label: "New Leads",
+      value: stats.leads.newLeads,
+      total: funnelTotal,
+      colorClass: "border-blue-400 bg-blue-50",
+      barColorClass: "bg-blue-500",
+    },
+    {
+      label: "Contacted Leads",
+      value: stats.leads.contactedLeads,
+      total: funnelTotal,
+      colorClass: "border-cyan-400 bg-cyan-50",
+      barColorClass: "bg-cyan-500",
+    },
+    {
+      label: "Converted Leads",
+      value: stats.leads.convertedLeads,
+      total: funnelTotal,
+      colorClass: "border-emerald-400 bg-emerald-50",
+      barColorClass: "bg-emerald-500",
+    },
+    {
+      label: "Pending Follow-ups",
+      value: stats.leads.pendingLeads,
+      total: funnelTotal,
+      colorClass: "border-amber-400 bg-amber-50",
+      barColorClass: "bg-amber-500",
+    },
+    {
+      label: "Not Interested",
+      value: stats.leads.notInterestedLeads,
+      total: funnelTotal,
+      colorClass: "border-red-400 bg-red-50",
+      barColorClass: "bg-red-500",
+    },
+    {
+      label: "Assigned Profiles",
+      value: stats.profileAssignment.assigned,
+      total: profileFunnelTotal,
+      colorClass: "border-violet-400 bg-violet-50",
+      barColorClass: "bg-violet-500",
+    },
+    {
+      label: "Re-assigned Profiles",
+      value: stats.profileAssignment.reassigned,
+      total: profileFunnelTotal,
+      colorClass: "border-purple-400 bg-purple-50",
+      barColorClass: "bg-purple-500",
+    },
+    {
+      label: "Unassigned Profiles",
+      value: stats.profileAssignment.unassigned,
+      total: profileFunnelTotal,
+      colorClass: "border-gray-400 bg-gray-50",
+      barColorClass: "bg-gray-500",
+    },
+  ];
+
+  const currentMonth = new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" });
 
   return (
     <div className="space-y-6">
@@ -53,20 +115,6 @@ export default async function AdminDashboardPage() {
         />
 
         <StatWidget
-          title="Profile Hold"
-          lines={[{ label: "On Hold", value: stats.profiles.profilesOnHold }]}
-          progress={{
-            value:
-              stats.profiles.totalProfiles > 0
-                ? (stats.profiles.profilesOnHold / stats.profiles.totalProfiles) * 100
-                : 0,
-            colorClass: "bg-orange-500",
-          }}
-          actionLabel="Details"
-          actionHref="/dashboard/admin/profiles?status=ON_HOLD"
-        />
-
-        <StatWidget
           title="Ongoing Services"
           badge={{ text: "Live Data", className: "bg-emerald-100 text-emerald-700 border-emerald-200" }}
           lines={[
@@ -77,24 +125,6 @@ export default async function AdminDashboardPage() {
           progress={{ value: servicesProgress, colorClass: "bg-emerald-500" }}
           actionLabel="View Services"
           actionHref="/dashboard/admin/services"
-        />
-
-        <StatWidget
-          title="Leads"
-          badge={{
-            text: `${stats.leads.totalLeads} Total`,
-            className: "bg-cyan-100 text-cyan-700 border-cyan-200",
-          }}
-          lines={[
-            { label: "New", value: stats.leads.newLeads },
-            { label: "Contacted", value: stats.leads.contactedLeads },
-            { label: "Converted", value: stats.leads.convertedLeads },
-            { label: "Pending", value: stats.leads.pendingLeads },
-            { label: "Closed", value: stats.leads.closedLeads },
-          ]}
-          progress={{ value: leadsProgress, colorClass: "bg-cyan-500" }}
-          actionLabel="Manage Leads"
-          actionHref="/dashboard/admin/leads"
         />
 
         <StatWidget
@@ -114,16 +144,6 @@ export default async function AdminDashboardPage() {
         />
 
         <StatWidget
-          title="Meetings"
-          lines={[
-            { label: "Face to Face", value: stats.meetings.faceToFaceMeetings },
-            { label: "Tele Meeting", value: stats.meetings.teleMeetings },
-          ]}
-          actionLabel="View Meetings"
-          actionHref="/dashboard/admin/meetings"
-        />
-
-        <StatWidget
           title="Employees"
           badge={{
             text: `${stats.employees.totalEmployees} Total`,
@@ -136,6 +156,22 @@ export default async function AdminDashboardPage() {
           progress={{ value: employeesProgress, colorClass: "bg-violet-500" }}
           actionLabel="Manage Staff"
           actionHref="/dashboard/admin/employees"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <FunnelBreakdown
+            title="Lead Pipeline"
+            subtitle="Current lead status breakdown"
+            badge="Live Overview"
+            rows={funnelRows}
+          />
+        </div>
+        <ConversionRateCard
+          rate={stats.leads.conversionRate}
+          month={currentMonth}
+          todaysActivityCount={stats.todaysActivityCount}
         />
       </div>
     </div>
