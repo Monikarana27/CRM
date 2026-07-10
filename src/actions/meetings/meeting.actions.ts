@@ -25,6 +25,7 @@ export async function getMeetings(filter?: { status?: string }) {
     orderBy: { scheduledAt: "desc" },
     include: {
       profile: { select: { id: true, name: true, profileCode: true } },
+      profileTwo: { select: { id: true, name: true, profileCode: true } },
       assignedTo: { select: { id: true, name: true } },
     },
   });
@@ -43,6 +44,7 @@ export async function createMeetingAction(
 
   const parsed = meetingSchema.safeParse({
     profileId: formData.get("profileId"),
+    profileTwoId: formData.get("profileTwoId"),
     type: formData.get("type") || "TELE",
     status: formData.get("status") || "SCHEDULED",
     scheduledAt: formData.get("scheduledAt"),
@@ -57,6 +59,7 @@ export async function createMeetingAction(
   const meeting = await prisma.meeting.create({
     data: {
       profileId: parsed.data.profileId,
+      profileTwoId: parsed.data.profileTwoId || null,
       type: parsed.data.type,
       status: parsed.data.status,
       scheduledAt: new Date(parsed.data.scheduledAt),

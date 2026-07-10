@@ -142,32 +142,33 @@ model Profile {
   familyBio             String?  @db.Text
   familyAnnualIncome    String?
 
-  photoUrl      String?
+  //Meeting
+meetings          Meeting[] @relation("MeetingProfileOne")
+meetingsAsSecond  Meeting[] @relation("MeetingProfileTwo")
 
-  // Status & assignment
-  status        ProfileStatus @default(UNASSIGNED)
-  assignedToId  String?
-  assignedTo    User?         @relation("AssignedProfiles", fields: [assignedToId], references: [id])
-  assignedAt    DateTime?
-  convertedFromLead Lead?     
+photoUrl      String?
 
-  createdById   String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+// Status & assignment
+status        ProfileStatus @default(UNASSIGNED)
+assignedToId  String?
+assignedTo    User?         @relation("AssignedProfiles", fields: [assignedToId], references: [id])
+assignedAt    DateTime?
+convertedFromLead Lead?
 
-  partnerPreference PartnerPreference?
-  services          Service[]
-  meetings          Meeting[]      
-  callLogs          CallLog[] 
+createdById   String?
+createdAt     DateTime      @default(now())
+updatedAt     DateTime      @updatedAt
 
+partnerPreference PartnerPreference?
+services          Service[]
+callLogs          CallLog[]
 
-  @@index([status])
-  @@index([assignedToId])
-  @@index([phone])
-  @@index([profileCode])
-  @@map("profiles")
+@@index([status])
+@@index([assignedToId])
+@@index([phone])
+@@index([profileCode])
+@@map("profiles")
 }
-
 model PartnerPreference {
   id          String   @id @default(cuid())
   profileId   String   @unique
@@ -342,7 +343,10 @@ model Meeting {
   id          String        @id @default(cuid())
 
   profileId   String
-  profile     Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile     Profile       @relation("MeetingProfileOne", fields: [profileId], references: [id], onDelete: Cascade)
+
+  profileTwoId String?
+  profileTwo   Profile?     @relation("MeetingProfileTwo", fields: [profileTwoId], references: [id])
 
   type        MeetingType   @default(TELE)
   status      MeetingStatus @default(SCHEDULED)

@@ -19,6 +19,7 @@ type MeetingRow = {
   scheduledAt: Date;
   notes: string | null;
   profile: { id: string; name: string; profileCode: string };
+  profileTwo: { id: string; name: string; profileCode: string } | null;
   assignedTo: { id: string; name: string } | null;
 };
 
@@ -67,13 +68,23 @@ export function MeetingsTable({ meetings }: { meetings: MeetingRow[] }) {
   const columns: Column<MeetingRow>[] = [
     {
       key: "profile",
-      header: "Profile",
+      header: "Match",
       render: (row) => (
         <span className="font-medium">
           {row.profile.name}{" "}
           <span className="text-xs text-muted-foreground">
             ({row.profile.profileCode})
           </span>
+          {row.profileTwo && (
+            <>
+              {" "}
+              <span className="text-muted-foreground">↔</span>{" "}
+              {row.profileTwo.name}{" "}
+              <span className="text-xs text-muted-foreground">
+                ({row.profileTwo.profileCode})
+              </span>
+            </>
+          )}
         </span>
       ),
     },
