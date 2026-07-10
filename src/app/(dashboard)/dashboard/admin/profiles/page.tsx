@@ -13,13 +13,12 @@ export default async function ProfilesPage({
 }) {
   const { status } = await searchParams;
 
-  const validStatus = ["UNASSIGNED", "ASSIGNED", "REASSIGNED", "ON_HOLD", "EXPIRED"].includes(
-    status ?? ""
-  )
+  const validStatus = ["UNASSIGNED", "ASSIGNED", "REASSIGNED", "ON_HOLD", "EXPIRED"].includes(status ?? "")
     ? (status as "UNASSIGNED" | "ASSIGNED" | "REASSIGNED" | "ON_HOLD" | "EXPIRED")
     : undefined;
-
-  const profiles = await getProfiles(validStatus ? { status: validStatus } : undefined);
+  const profiles = status === "WEBSITE"
+    ? await getProfiles({ source: "Website" })
+    : await getProfiles(validStatus ? { status: validStatus } : undefined);
   const employees = await prisma.user.findMany({
     where: { active: true },
     select: { id: true, name: true },
@@ -31,6 +30,7 @@ export default async function ProfilesPage({
     { label: "Unassigned", value: "UNASSIGNED" },
     { label: "Assigned", value: "ASSIGNED" },
     { label: "Reassigned", value: "REASSIGNED" },
+    { label: "Website Profiles", value: "WEBSITE" },
   ];
 
   return (

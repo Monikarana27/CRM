@@ -24,12 +24,14 @@ async function logActivity(actorId: string, action: string, entityId: string) {
 export async function getProfiles(filter?: {
   status?: "UNASSIGNED" | "ASSIGNED" | "REASSIGNED" | "ON_HOLD" | "EXPIRED";
   assignedToId?: string;
+  source?: string;
 }) {
   await requireStaff();
   return prisma.profile.findMany({
     where: {
       ...(filter?.status ? { status: filter.status } : {}),
       ...(filter?.assignedToId ? { assignedToId: filter.assignedToId } : {}),
+      ...(filter?.source ? { source: filter.source } : {}),
     },
     orderBy: { createdAt: "desc" },
     include: {
