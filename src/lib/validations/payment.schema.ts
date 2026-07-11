@@ -8,6 +8,7 @@ export const paymentSchema = z.object({
   transactionId: z.string().optional(),
   paymentLinkUrl: z.string().optional(),
   notes: z.string().optional(),
+  currency: z.enum(["INR", "USD"]).default("INR"),
 });
 
 export type PaymentInput = z.infer<typeof paymentSchema>;

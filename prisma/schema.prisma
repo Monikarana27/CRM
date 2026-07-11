@@ -321,6 +321,7 @@ model Payment {
   createdById   String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+  currency String @default("INR")
 
   @@index([status])
   @@index([serviceId])

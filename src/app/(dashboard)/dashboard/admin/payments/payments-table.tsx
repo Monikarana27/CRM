@@ -15,6 +15,7 @@ import { updatePaymentStatusAction } from "@/actions/payments/payment.actions";
 type PaymentRow = {
   id: string;
   amount: number;
+  currency: string;
   method: string;
   status: string;
   transactionId: string | null;
@@ -76,15 +77,16 @@ export function PaymentsTable({ payments }: { payments: PaymentRow[] }) {
       render: (row) => row.service.plan.name,
     },
     {
-      key: "amount",
-      header: "Amount",
-      sortable: true,
-      render: (row) => (
-        <span className="tabular-nums font-medium">
-          ₹{row.amount.toLocaleString("en-IN")}
-        </span>
-      ),
-    },
+  key: "amount",
+  header: "Amount",
+  sortable: true,
+  render: (row) => (
+    <span className="tabular-nums font-medium">
+      {row.currency === "USD" ? "$" : "₹"}
+      {row.amount.toLocaleString("en-IN")}
+    </span>
+  ),
+},
     {
       key: "method",
       header: "Method",

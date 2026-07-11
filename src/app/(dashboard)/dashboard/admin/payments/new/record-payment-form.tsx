@@ -34,6 +34,8 @@ export function RecordPaymentForm({ services, action }: RecordPaymentFormProps) 
   const [serviceId, setServiceId] = useState("");
   const [method, setMethod] = useState("OTHER");
   const [status, setStatus] = useState("PENDING");
+  const [currency, setCurrency] = useState("INR");
+  
 
   const selectedService = useMemo(
     () => services.find((s) => s.id === serviceId),
@@ -73,6 +75,20 @@ export function RecordPaymentForm({ services, action }: RecordPaymentFormProps) 
                 placeholder="25000"
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Currency</Label>
+              <Select value={currency} onValueChange={setCurrency}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="INR">INR (₹)</SelectItem>
+                  <SelectItem value="USD">USD ($)</SelectItem>
+                </SelectContent>
+              </Select>
+              <input type="hidden" name="currency" value={currency} />
             </div>
 
             <div className="space-y-2">
