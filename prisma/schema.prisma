@@ -31,6 +31,7 @@ model User {
   assignedLeads    Lead[]        @relation("AssignedLeads")
   assignedMeetings Meeting[]     @relation("AssignedMeetings")
   salesTargets     SalesTarget[]
+  leadRemarks      LeadRemark[]
 
   @@index([role])
   @@index([email])
@@ -164,6 +165,11 @@ model Profile {
   partnerPreference PartnerPreference?
   subscriptions Subscription[]
   callLogs          CallLog[]
+  queueEntry ProfileQueue?
+  documents  ProfileDocument[]
+
+  approvalStatus ProfileApprovalStatus @default(PENDING_APPROVAL)
+  approvalNotes  String?               @db.Text
 
   @@index([status])
   @@index([assignedToId])
@@ -237,6 +243,9 @@ model Lead {
   createdById String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
+  remarks      LeadRemark[]
+  profileQueue ProfileQueue?
 
   @@index([status])
   @@index([assignedToId])
@@ -442,4 +451,69 @@ model RolePermission {
   @@unique([role, permissionId])
   @@index([role])
   @@map("role_permissions")
+}
+
+enum LeadCallOutcome {
+  INTERESTED
+  FOLLOW_UP
+  NOT_INTERESTED
+  DNP
+}
+
+model LeadRemark {
+  id        String          @id @default(cuid())
+  leadId    String
+  lead      Lead            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  actorId   String
+  actor     User            @relation(fields: [actorId], references: [id])
+  outcome   LeadCallOutcome
+  remark    String?         @db.Text
+  createdAt DateTime        @default(now())
+
+  @@index([leadId])
+  @@map("lead_remarks")
+}
+
+enum ProfileQueueStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+model ProfileQueue {
+  id              String             @id @default(cuid())
+  leadId          String             @unique
+  lead            Lead               @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  status          ProfileQueueStatus @default(PENDING)
+  createdProfileId String?           @unique
+  createdProfile  Profile?           @relation(fields: [createdProfileId], references: [id])
+  sentToQueueAt   DateTime           @default(now())
+  sentById        String?
+
+  @@index([status])
+  @@map("profile_queue")
+}
+
+enum DocumentType {
+  PHOTO
+  ID_PROOF
+  OTHER
+}
+
+model ProfileDocument {
+  id         String       @id @default(cuid())
+  profileId  String
+  profile    Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  url        String
+  type       DocumentType
+  uploadedAt DateTime     @default(now())
+
+  @@index([profileId])
+  @@map("profile_documents")
+}
+
+enum ProfileApprovalStatus {
+  PENDING_APPROVAL
+  APPROVED
+  NEEDS_CHANGES
 }

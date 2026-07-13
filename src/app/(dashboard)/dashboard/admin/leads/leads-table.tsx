@@ -41,10 +41,10 @@ function ConvertButton({ leadId, disabled }: { leadId: string; disabled: boolean
       variant="outline"
       size="sm"
       disabled={disabled || isPending}
-      onClick={() => startTransition(() => convertLeadToProfileAction(leadId))}
+      onClick={() => startTransition(() => sendToProfileCreationAction(leadId))}
     >
       <ArrowRightCircle className="mr-1.5 h-3.5 w-3.5" />
-      {disabled ? "Converted" : isPending ? "Converting..." : "Convert"}
+      {disabled ? "Sent to Queue" : isPending ? "Converting..." : "Send to Profile Creation"}
     </Button>
   );
 }

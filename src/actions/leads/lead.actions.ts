@@ -156,8 +156,16 @@ export async function bulkAssignLeadsAction(leadIds: string[], employeeId: strin
 export async function convertLeadToProfileAction(leadId: string) {
   const session = await requireStaff();
 
-  const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+  if (!["SUPER_ADMIN", "ADMIN", "PROFILE_CREATOR"].includes(session.user.role)) {
+    throw new Error("Only Profile Creators can convert leads to profiles");
+  }
+
+  const lead = await prisma.lead.findUnique({
+    where: { id: leadId },
+  });
+
   if (!lead) throw new Error("Lead not found");
+
   if (lead.convertedProfileId) {
     redirect(`/dashboard/admin/profiles/${lead.convertedProfileId}/edit`);
   }
@@ -180,10 +188,17 @@ export async function convertLeadToProfileAction(leadId: string) {
 
   await prisma.lead.update({
     where: { id: leadId },
-    data: { status: "CONVERTED", convertedProfileId: profile.id },
+    data: {
+      status: "CONVERTED",
+      convertedProfileId: profile.id,
+    },
   });
 
-  await logActivity(session.user.id, "CONVERT_LEAD_TO_PROFILE", leadId);
+  await logActivity(
+    session.user.id,
+    "CONVERT_LEAD_TO_PROFILE",
+    leadId
+  );
 
   revalidatePath("/dashboard/admin/leads");
   redirect(`/dashboard/admin/profiles/${profile.id}/edit`);
