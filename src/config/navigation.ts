@@ -30,6 +30,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "Profiles", href: "/dashboard/admin/profiles", icon: UserSquare2 },
     { label: "Leads", href: "/dashboard/admin/leads", icon: Contact },
     { label: "Approvals", href: "/dashboard/admin/profile-approvals", icon: ClipboardList },
+  { label: "Service Overview", href: "/dashboard/admin/service-overview", icon: HeartHandshake },
     { label: "Employees & Roles", href: "/dashboard/admin/employees", icon: Users },
   ],
   ADMIN: [
@@ -46,6 +47,8 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "Meetings", href: "/dashboard/admin/meetings", icon: CalendarClock },
     { label: "Activity Logs", href: "/dashboard/admin/activity-logs", icon: Activity },
     { label: "Welcome Calls", href: "/dashboard/admin/welcome-calls", icon: PhoneCall },
+      { label: "Service Overview", href: "/dashboard/admin/service-overview", icon: HeartHandshake },
+      { label: "Approvals", href: "/dashboard/admin/profile-approvals", icon: ClipboardList },
   ],
   SALES: [
     { label: "Dashboard", href: "/dashboard/sales", icon: LayoutDashboard },

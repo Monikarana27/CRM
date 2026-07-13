@@ -38,7 +38,7 @@ async function getAchievedAmount(userId: string, month: number, year: number) {
     where: {
       status: "PAID",
       paidAt: { gte: monthStart, lte: monthEnd },
-      service: {
+      subscription: {
         profile: { assignedToId: userId },
       },
     },
