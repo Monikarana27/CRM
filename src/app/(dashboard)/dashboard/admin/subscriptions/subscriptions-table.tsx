@@ -11,9 +11,9 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { updateServiceStatusAction } from "@/actions/services/service.actions";
+import { updateSubscriptionStatusAction } from "@/actions/subscriptions/subscription.actions";
 
-type ServiceRow = {
+type SubscriptionRow = {
   id: string;
   status: string;
   startDate: Date;
@@ -28,14 +28,14 @@ const STATUS_STYLES: Record<string, string> = {
   EXPIRED: "bg-red-100 text-red-700 border-red-200",
 };
 
-function StatusSelect({ service }: { service: ServiceRow }) {
+function StatusSelect({ subscription }: { subscription: SubscriptionRow }) {
   const [isPending, startTransition] = useTransition();
-  const [value, setValue] = useState(service.status);
+  const [value, setValue] = useState(subscription.status);
 
   function handleChange(newStatus: string) {
     setValue(newStatus);
     startTransition(() => {
-      updateServiceStatusAction(service.id, newStatus as "ACTIVE" | "HOLD" | "EXPIRED");
+      updateSubscriptionStatusAction(subscription.id, newStatus as "ACTIVE" | "HOLD" | "EXPIRED");
     });
   }
 
@@ -53,8 +53,8 @@ function StatusSelect({ service }: { service: ServiceRow }) {
   );
 }
 
-export function ServicesTable({ services }: { services: ServiceRow[] }) {
-  const columns: Column<ServiceRow>[] = [
+export function SubscriptionsTable({ subscriptions }: { subscriptions: SubscriptionRow[] }) {
+  const columns: Column<SubscriptionRow>[] = [
     {
       key: "profile",
       header: "Profile",
@@ -100,16 +100,16 @@ export function ServicesTable({ services }: { services: ServiceRow[] }) {
     {
       key: "status",
       header: "Status",
-      render: (row) => <StatusSelect service={row} />,
+      render: (row) => <StatusSelect subscription={row} />,
     },
   ];
 
   return (
     <DataTable
-      data={services}
+      data={subscriptions}
       columns={columns}
       searchPlaceholder="Search by profile name..."
-      emptyMessage="No services in this view."
+      emptyMessage="No subscriptions in this view."
     />
   );
 }

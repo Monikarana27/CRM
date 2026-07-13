@@ -15,7 +15,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 
-type Service = {
+type subscription = {
   id: string;
   profile: { id: string; name: string; profileCode: string };
   plan: { id: string; name: string; price: number };
@@ -25,21 +25,21 @@ const METHOD_OPTIONS = ["CASH", "UPI", "CARD", "BANK_TRANSFER", "PAYU", "PAYPAL"
 const STATUS_OPTIONS = ["PAID", "PENDING", "FAILED"];
 
 interface RecordPaymentFormProps {
-  services: Service[];
+  subscriptions: subscription[];
   action: (prevState: unknown, formData: FormData) => Promise<{ error: string | null }>;
 }
 
-export function RecordPaymentForm({ services, action }: RecordPaymentFormProps) {
+export function RecordPaymentForm({ subscriptions, action }: RecordPaymentFormProps) {
   const [state, formAction, isPending] = useActionState(action, { error: null });
-  const [serviceId, setServiceId] = useState("");
+  const [subscriptionId, setsubscriptionId] = useState("");
   const [method, setMethod] = useState("OTHER");
   const [status, setStatus] = useState("PENDING");
   const [currency, setCurrency] = useState("INR");
   
 
-  const selectedService = useMemo(
-    () => services.find((s) => s.id === serviceId),
-    [serviceId, services]
+  const selectedsubscription = useMemo(
+    () => subscriptions.find((s) => s.id === subscriptionId),
+    [subscriptionId, subscriptions]
   );
 
   return (
@@ -48,20 +48,20 @@ export function RecordPaymentForm({ services, action }: RecordPaymentFormProps) 
         <form action={formAction} className="space-y-5">
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
-              <Label>Service</Label>
-              <Select value={serviceId} onValueChange={setServiceId}>
+              <Label>subscription</Label>
+              <Select value={subscriptionId} onValueChange={setsubscriptionId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a service" />
+                  <SelectValue placeholder="Select a subscription" />
                 </SelectTrigger>
                 <SelectContent>
-                  {services.map((s) => (
+                  {subscriptions.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.profile.name} ({s.profile.profileCode}) — {s.plan.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <input type="hidden" name="serviceId" value={serviceId} />
+              <input type="hidden" name="subscriptionId" value={subscriptionId} />
             </div>
 
             <div className="space-y-2">
@@ -71,7 +71,7 @@ export function RecordPaymentForm({ services, action }: RecordPaymentFormProps) 
                 name="amount"
                 type="number"
                 step="0.01"
-                defaultValue={selectedService?.plan.price}
+                defaultValue={selectedsubscription?.plan.price}
                 placeholder="25000"
                 required
               />
@@ -148,7 +148,7 @@ export function RecordPaymentForm({ services, action }: RecordPaymentFormProps) 
           )}
 
           <div className="flex items-center gap-3 pt-2">
-            <Button type="submit" disabled={isPending || !serviceId}>
+            <Button type="submit" disabled={isPending || !subscriptionId}>
               {isPending ? "Recording..." : "Record Payment"}
             </Button>
             <Button variant="outline" asChild>

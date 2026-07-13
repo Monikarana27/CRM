@@ -123,8 +123,8 @@ export default async function AdminDashboardPage() {
             { label: "Expired", value: stats.services.expiredServices },
           ]}
           progress={{ value: servicesProgress, colorClass: "bg-emerald-500" }}
-          actionLabel="View Services"
-          actionHref="/dashboard/admin/services"
+          actionLabel="View Subscriptions"
+          actionHref="/dashboard/admin/subscriptions"
         />
 
         <StatWidget

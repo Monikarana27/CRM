@@ -32,7 +32,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
   { label: "Sales Targets", href: "/dashboard/admin/sales-targets", icon: Target },
   { label: "Assignments", href: "/dashboard/admin/assignments", icon: ClipboardList },
   { label: "Plans", href: "/dashboard/admin/plans", icon: HeartHandshake },
-  { label: "Services", href: "/dashboard/admin/services", icon: HeartHandshake },
+  { label: "Subscriptions", href: "/dashboard/admin/subscriptions", icon: HeartHandshake },
   { label: "Payments", href: "/dashboard/admin/payments", icon: CreditCard },
   { label: "Settings", href: "/dashboard/admin/settings", icon: Settings },
   { label: "Meetings", href: "/dashboard/admin/meetings", icon: CalendarClock },

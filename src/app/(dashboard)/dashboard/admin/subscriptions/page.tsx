@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { getServices } from "@/actions/services/service.actions";
+import { getSubscriptions } from "@/actions/subscriptions/subscription.actions";
 import { DashboardHero } from "@/components/layout/dashboard-hero";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { ServicesTable } from "./services-table";
+import { SubscriptionsTable } from "./subscriptions-table";
 
-export default async function ServicesPage({
+export default async function SubscriptionsPage({
   searchParams,
 }: {
   searchParams: Promise<{ status?: string }>;
@@ -16,10 +16,10 @@ export default async function ServicesPage({
     ? (status as "ACTIVE" | "HOLD" | "EXPIRED")
     : undefined;
 
-  const services = await getServices(validStatus ? { status: validStatus } : undefined);
+  const subscriptions = await getSubscriptions(validStatus ? { status: validStatus } : undefined);
 
   const tabs = [
-    { label: "All Services", value: undefined },
+    { label: "All Subscriptions", value: undefined },
     { label: "Active", value: "ACTIVE" },
     { label: "Hold", value: "HOLD" },
     { label: "Expired", value: "EXPIRED" },
@@ -28,7 +28,7 @@ export default async function ServicesPage({
   return (
     <div className="space-y-6">
       <DashboardHero
-        title="Services"
+        title="Subscriptions"
         subtitle="Manage active subscriptions across your profiles."
       />
 
@@ -37,8 +37,8 @@ export default async function ServicesPage({
           {tabs.map((tab) => {
             const isActive = validStatus === tab.value;
             const href = tab.value
-              ? `/dashboard/admin/services?status=${tab.value}`
-              : "/dashboard/admin/services";
+              ? `/dashboard/admin/subscriptions?status=${tab.value}`
+              : "/dashboard/admin/subscriptions";
             return (
               <Link
                 key={tab.label}
@@ -55,14 +55,14 @@ export default async function ServicesPage({
           })}
         </div>
         <Button asChild>
-          <Link href="/dashboard/admin/services/new">
+          <Link href="/dashboard/admin/subscriptions/new">
             <Plus className="mr-2 h-4 w-4" />
-            Attach Service
+            Attach Subscription
           </Link>
         </Button>
       </div>
 
-      <ServicesTable services={services} />
+      <SubscriptionsTable subscriptions={subscriptions} />
     </div>
   );
 }

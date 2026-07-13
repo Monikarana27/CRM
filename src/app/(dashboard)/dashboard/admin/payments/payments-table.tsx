@@ -20,7 +20,7 @@ type PaymentRow = {
   status: string;
   transactionId: string | null;
   createdAt: Date;
-  service: {
+  subscription: {
     profile: { id: string; name: string; profileCode: string };
     plan: { id: string; name: string };
   };
@@ -64,9 +64,9 @@ export function PaymentsTable({ payments }: { payments: PaymentRow[] }) {
       header: "Profile",
       render: (row) => (
         <span className="font-medium">
-          {row.service.profile.name}{" "}
+          {row.subscription.profile.name}{" "}
           <span className="text-xs text-muted-foreground">
-            ({row.service.profile.profileCode})
+            ({row.subscription.profile.profileCode})
           </span>
         </span>
       ),
@@ -74,7 +74,7 @@ export function PaymentsTable({ payments }: { payments: PaymentRow[] }) {
     {
       key: "plan",
       header: "Plan",
-      render: (row) => row.service.plan.name,
+      render: (row) => row.subscription.plan.name,
     },
     {
   key: "amount",

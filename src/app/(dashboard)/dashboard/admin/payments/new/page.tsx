@@ -4,7 +4,7 @@ import { createPaymentAction } from "@/actions/payments/payment.actions";
 import { RecordPaymentForm } from "./record-payment-form";
 
 export default async function NewPaymentPage() {
-  const services = await prisma.service.findMany({
+  const services = await prisma.subscription.findMany({
     include: {
       profile: { select: { id: true, name: true, profileCode: true } },
       plan: { select: { id: true, name: true, price: true } },

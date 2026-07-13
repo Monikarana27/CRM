@@ -1,9 +1,9 @@
 import { DashboardHero } from "@/components/layout/dashboard-hero";
 import { prisma } from "@/lib/db/prisma";
-import { createServiceAction } from "@/actions/services/service.actions";
-import { AttachServiceForm } from "./attach-service-form";
+import { createSubscriptionAction } from "@/actions/subscriptions/subscription.actions";
+import { AttachSubscriptionForm } from "./attach-subscription-form";
 
-export default async function NewServicePage() {
+export default async function NewSubscriptionPage() {
   const [profiles, plans] = await Promise.all([
     prisma.profile.findMany({
       select: { id: true, name: true, profileCode: true },
@@ -19,13 +19,13 @@ export default async function NewServicePage() {
   return (
     <div className="space-y-6">
       <DashboardHero
-        title="Attach Service"
+        title="Attach Subscription"
         subtitle="Assign a subscription plan to a profile."
       />
-      <AttachServiceForm
+      <AttachSubscriptionForm
         profiles={profiles}
         plans={plans}
-        action={createServiceAction}
+        action={createSubscriptionAction}
       />
     </div>
   );

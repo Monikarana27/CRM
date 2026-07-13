@@ -8,9 +8,12 @@ datasource db {
 }
 
 enum Role {
+  SUPER_ADMIN
   ADMIN
   SALES
+  PROFILE_CREATOR
   SERVICE
+  HR
 }
 
 model User {
@@ -27,7 +30,7 @@ model User {
   assignedProfiles Profile[]     @relation("AssignedProfiles")
   assignedLeads    Lead[]        @relation("AssignedLeads")
   assignedMeetings Meeting[]     @relation("AssignedMeetings")
-  salesTargets     SalesTarget[] 
+  salesTargets     SalesTarget[]
 
   @@index([role])
   @@index([email])
@@ -67,7 +70,6 @@ enum Gender {
 model Profile {
   id            String        @id @default(cuid())
   profileCode   String        @unique
-
 
   // Source
   source        String?
@@ -142,33 +144,34 @@ model Profile {
   familyBio             String?  @db.Text
   familyAnnualIncome    String?
 
-  //Meeting
-meetings          Meeting[] @relation("MeetingProfileOne")
-meetingsAsSecond  Meeting[] @relation("MeetingProfileTwo")
+  // Meeting
+  meetings          Meeting[] @relation("MeetingProfileOne")
+  meetingsAsSecond  Meeting[] @relation("MeetingProfileTwo")
 
-photoUrl      String?
+  photoUrl      String?
 
-// Status & assignment
-status        ProfileStatus @default(UNASSIGNED)
-assignedToId  String?
-assignedTo    User?         @relation("AssignedProfiles", fields: [assignedToId], references: [id])
-assignedAt    DateTime?
-convertedFromLead Lead?
+  // Status & assignment
+  status        ProfileStatus @default(UNASSIGNED)
+  assignedToId  String?
+  assignedTo    User?         @relation("AssignedProfiles", fields: [assignedToId], references: [id])
+  assignedAt    DateTime?
+  convertedFromLead Lead?
 
-createdById   String?
-createdAt     DateTime      @default(now())
-updatedAt     DateTime      @updatedAt
+  createdById   String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-partnerPreference PartnerPreference?
-services          Service[]
-callLogs          CallLog[]
+  partnerPreference PartnerPreference?
+  subscriptions Subscription[]
+  callLogs          CallLog[]
 
-@@index([status])
-@@index([assignedToId])
-@@index([phone])
-@@index([profileCode])
-@@map("profiles")
+  @@index([status])
+  @@index([assignedToId])
+  @@index([phone])
+  @@index([profileCode])
+  @@map("profiles")
 }
+
 model PartnerPreference {
   id          String   @id @default(cuid())
   profileId   String   @unique
@@ -241,51 +244,50 @@ model Lead {
   @@map("leads")
 }
 
-enum ServiceStatus {
+enum SubscriptionStatus {
   ACTIVE
   HOLD
   EXPIRED
 }
 
 model Plan {
-  id            String    @id @default(cuid())
+  id            String          @id @default(cuid())
   name          String
   price         Float
   durationDays  Int
   description   String?
-  active        Boolean   @default(true)
+  active        Boolean         @default(true)
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
-  services      Service[]
+  subscriptions Subscription[]
 
   @@map("plans")
 }
 
-model Service {
-  id            String        @id @default(cuid())
+model Subscription {
+  id            String             @id @default(cuid())
 
   profileId     String
-  profile       Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile       Profile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   planId        String
-  plan          Plan          @relation(fields: [planId], references: [id])
+  plan          Plan               @relation(fields: [planId], references: [id])
 
-  status        ServiceStatus @default(ACTIVE)
-  startDate     DateTime      @default(now())
+  status        SubscriptionStatus @default(ACTIVE)
+  startDate     DateTime           @default(now())
   endDate       DateTime?
 
   createdById   String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
   payments      Payment[]
 
   @@index([status])
   @@index([profileId])
-  @@map("services")
+  @@map("subscriptions")
 }
-
 enum PaymentStatus {
   PAID
   PENDING
@@ -305,9 +307,8 @@ enum PaymentMethod {
 model Payment {
   id            String        @id @default(cuid())
 
-  serviceId     String
-  service       Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-
+ subscriptionId String
+  subscription   Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
   amount        Float
   method        PaymentMethod @default(OTHER)
   status        PaymentStatus @default(PENDING)
@@ -321,10 +322,10 @@ model Payment {
   createdById   String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-  currency String @default("INR")
+  currency      String        @default("INR")
 
   @@index([status])
-  @@index([serviceId])
+  @@index([subscriptionId])
   @@map("payments")
 }
 
@@ -407,4 +408,38 @@ model SalesTarget {
 
   @@unique([userId, month, year])
   @@map("sales_targets")
+}
+
+// ---------------------------------------------------------
+// Stage 0: Role Model + Permission Matrix Foundation
+// ---------------------------------------------------------
+enum PermissionAction {
+  VIEW
+  CREATE
+  EDIT
+  APPROVE
+  ASSIGN
+  FULL
+}
+
+model Permission {
+  id     String           @id @default(cuid())
+  module String
+  action PermissionAction
+
+  roles  RolePermission[]
+
+  @@unique([module, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  role         Role
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([role, permissionId])
+  @@index([role])
+  @@map("role_permissions")
 }

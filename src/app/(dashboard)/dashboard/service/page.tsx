@@ -29,8 +29,8 @@ export default async function ServiceDashboardPage() {
         <StatWidget
           title="Service Status"
           lines={[{ label: "Active Services", value: stats.activeServiceCount }]}
-          actionLabel="View Services"
-          actionHref="/dashboard/admin/services"
+          actionLabel="View Subscriptions"
+          actionHref="/dashboard/admin/subscriptions"
         />
       </div>
     </div>

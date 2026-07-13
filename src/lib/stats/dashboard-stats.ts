@@ -71,9 +71,9 @@ export async function getAdminStats() {
     getProfileAssignmentBreakdown(),
     prisma.user.count({ where: { active: true } }),
     prisma.user.count(),
-    prisma.service.count({ where: { status: "ACTIVE" } }),
-    prisma.service.count({ where: { status: "HOLD" } }),
-    prisma.service.count({ where: { status: "EXPIRED" } }),
+    prisma.subscription.count({ where: { status: "ACTIVE" } }),
+    prisma.subscription.count({ where: { status: "HOLD" } }),
+    prisma.subscription.count({ where: { status: "EXPIRED" } }),
     prisma.payment.count({ where: { status: "PAID" } }),
     prisma.payment.count({ where: { status: "PENDING" } }),
     prisma.payment.count({ where: { status: "FAILED" } }),
@@ -153,7 +153,7 @@ export async function getServiceStats(userId: string) {
         scheduledAt: { gte: todayStart, lte: todayEnd },
       },
     }),
-    prisma.service.count({
+    prisma.subscription.count({
       where: { status: "ACTIVE", profile: { assignedToId: userId } },
     }),
   ]);

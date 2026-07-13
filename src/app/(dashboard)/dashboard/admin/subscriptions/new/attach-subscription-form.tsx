@@ -18,13 +18,13 @@ import { ArrowLeft } from "lucide-react";
 type Profile = { id: string; name: string; profileCode: string };
 type Plan = { id: string; name: string; price: number; durationDays: number };
 
-interface AttachServiceFormProps {
+interface AttachSubscriptionFormProps {
   profiles: Profile[];
   plans: Plan[];
   action: (prevState: unknown, formData: FormData) => Promise<{ error: string | null }>;
 }
 
-export function AttachServiceForm({ profiles, plans, action }: AttachServiceFormProps) {
+export function AttachSubscriptionForm({ profiles, plans, action }: AttachSubscriptionFormProps) {
   const [state, formAction, isPending] = useActionState(action, { error: null });
   const [profileId, setProfileId] = useState("");
   const [planId, setPlanId] = useState("");

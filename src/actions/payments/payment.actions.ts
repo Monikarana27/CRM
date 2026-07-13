@@ -26,7 +26,7 @@ export async function getPayments(filter?: { status?: "PAID" | "PENDING" | "FAIL
     where: filter?.status ? { status: filter.status } : {},
     orderBy: { createdAt: "desc" },
     include: {
-      service: {
+      subscription: {
         include: {
           profile: { select: { id: true, name: true, profileCode: true } },
           plan: { select: { id: true, name: true } },
@@ -40,7 +40,7 @@ export async function getPaymentById(id: string) {
   await requireStaff();
   return prisma.payment.findUnique({
     where: { id },
-    include: { service: { include: { profile: true, plan: true } } },
+    include: { subscription: { include: { profile: true, plan: true } } },
   });
 }
 
@@ -51,7 +51,7 @@ export async function createPaymentAction(
   const session = await requireStaff();
 
   const parsed = paymentSchema.safeParse({
-    serviceId: formData.get("serviceId"),
+    subscriptionId: formData.get("subscriptionId"),
     amount: formData.get("amount"),
     method: formData.get("method") || "OTHER",
     status: formData.get("status") || "PENDING",
@@ -66,7 +66,7 @@ export async function createPaymentAction(
 
   const payment = await prisma.payment.create({
     data: {
-      serviceId: parsed.data.serviceId,
+      subscriptionId: parsed.data.subscriptionId,
       amount: parsed.data.amount,
       method: parsed.data.method,
       status: parsed.data.status,
