@@ -68,7 +68,11 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "Service Status", href: "/dashboard/service/status", icon: Activity },
   ],
   HR: [
-    { label: "Dashboard", href: "/dashboard/admin", icon: LayoutDashboard },
-    { label: "Employees", href: "/dashboard/admin/employees", icon: Users },
-  ],
+  { label: "Dashboard", href: "/dashboard/hr", icon: LayoutDashboard },
+  { label: "Attendance", href: "/dashboard/hr/attendance", icon: CalendarClock },
+  { label: "Leave", href: "/dashboard/hr/leave", icon: ClipboardList },
+  { label: "Recruitment", href: "/dashboard/hr/recruitment", icon: Users },
+  { label: "Performance", href: "/dashboard/hr/performance", icon: Activity },
+  { label: "Payroll", href: "/dashboard/hr/payroll", icon: CreditCard },
+],
 };

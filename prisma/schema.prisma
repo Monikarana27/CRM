@@ -39,6 +39,11 @@ model User {
   assignedMeetings Meeting[]     @relation("AssignedMeetings")
   salesTargets     SalesTarget[]
   leadRemarks      LeadRemark[]
+  attendance         Attendance[]
+  leaveRequests      LeaveRequest[]
+  performanceReviews PerformanceReview[]
+  payroll            Payroll[]
+  loginEvents        LoginEvent[]
 
   @@index([role])
   @@index([email])
@@ -544,4 +549,104 @@ model LoginEvent {
 
   @@index([userId])
   @@map("login_events")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  ON_LEAVE
+}
+
+model Attendance {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime
+  status    AttendanceStatus @default(PRESENT)
+  checkIn   DateTime?
+  checkOut  DateTime?
+  createdAt DateTime         @default(now())
+
+  @@unique([userId, date])
+  @@map("attendance")
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model LeaveRequest {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startDate DateTime
+  endDate   DateTime
+  reason    String?     @db.Text
+  status    LeaveStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+
+  @@map("leave_requests")
+}
+
+model JobOpening {
+  id          String       @id @default(cuid())
+  title       String
+  department  Department?
+  description String?      @db.Text
+  active      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  interviews  Interview[]
+
+  @@map("job_openings")
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  REJECTED
+  HIRED
+}
+
+model Interview {
+  id             String          @id @default(cuid())
+  jobOpeningId   String
+  jobOpening     JobOpening      @relation(fields: [jobOpeningId], references: [id], onDelete: Cascade)
+  candidateName  String
+  candidatePhone String?
+  scheduledAt    DateTime
+  status         InterviewStatus @default(SCHEDULED)
+  notes          String?         @db.Text
+  createdAt      DateTime        @default(now())
+
+  @@map("interviews")
+}
+
+model PerformanceReview {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewedById String?
+  rating     Int
+  comments   String?  @db.Text
+  reviewDate DateTime @default(now())
+
+  @@map("performance_reviews")
+}
+
+model Payroll {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  month      Int
+  year       Int
+  baseSalary Float
+  incentive  Float    @default(0)
+  paidAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, month, year])
+  @@map("payroll")
 }

@@ -20,7 +20,7 @@ type ProfileRow = {
   profileCode: string;
   assignedAt: Date | null;
   assignedTo: { id: string; name: string } | null;
-  services: {
+  subscriptions: {
     status: string;
     payments: { status: string }[];
   }[];
@@ -112,7 +112,7 @@ export function AssignmentsFilter({
       key: "paymentStatus",
       header: "Payment Status",
       render: (row) => {
-        const status = row.services[0]?.payments[0]?.status;
+        const status = row.subscriptions[0]?.payments[0]?.status;
         return status ? (
           <Badge variant="outline" className={PAYMENT_STATUS_STYLES[status] ?? ""}>
             {status}
@@ -126,7 +126,7 @@ export function AssignmentsFilter({
       key: "serviceStatus",
       header: "Service Status",
       render: (row) => {
-        const status = row.services[0]?.status;
+        const status = row.subscriptions[0]?.status;
         return status ? (
           <Badge variant="outline" className={SERVICE_STATUS_STYLES[status] ?? ""}>
             {status}

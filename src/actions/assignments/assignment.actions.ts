@@ -20,7 +20,7 @@ export async function getAssignedProfiles(employeeId?: string) {
     orderBy: { assignedAt: "desc" },
     include: {
       assignedTo: { select: { id: true, name: true } },
-      services: {
+      subscriptions: {
         orderBy: { createdAt: "desc" },
         take: 1,
         include: {
