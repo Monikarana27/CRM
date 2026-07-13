@@ -26,12 +26,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const isValid = await verifyPassword(password, user.password);
         if (!isValid) return null;
 
+        await prisma.loginEvent.create({ data: { userId: user.id } }).catch(() => {});
+
+
         return {
+
+
           id: user.id,
+
+
           name: user.name,
+
+
           email: user.email,
+
+
           role: user.role,
+
+
           active: user.active,
+
+
         };
       },
     }),
