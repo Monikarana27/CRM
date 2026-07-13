@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 
 export async function startImpersonationAction(targetUserId: string) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
+  if (!session?.user || !["ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {
     throw new Error("Unauthorized");
   }
   if (session.user.impersonating) {
