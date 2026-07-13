@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 
 export const employeeSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -8,9 +8,10 @@ export const employeeSchema = z.object({
     .min(6, "Password must be at least 6 characters")
     .optional()
     .or(z.literal("")),
-  role: z.enum(["ADMIN", "SALES", "SERVICE"], {
+  role: z.enum(["SUPER_ADMIN", "ADMIN", "SALES", "PROFILE_CREATOR", "SERVICE", "HR"], {
     message: "Select a valid role",
   }),
+  department: z.enum(["SALES_EMP", "PROFILE_EMP", "SERVICE_EMP", "HR_EMP"]).optional(),
   active: z.boolean().default(true),
 });
 

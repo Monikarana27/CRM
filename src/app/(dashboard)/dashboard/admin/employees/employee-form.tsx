@@ -78,9 +78,12 @@ export function EmployeeForm({ mode, defaultValues, action }: EmployeeFormProps)
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
                   <SelectItem value="ADMIN">Admin</SelectItem>
                   <SelectItem value="SALES">Sales</SelectItem>
+                  <SelectItem value="PROFILE_CREATOR">Profile Creator</SelectItem>
                   <SelectItem value="SERVICE">Service</SelectItem>
+                  <SelectItem value="HR">HR</SelectItem>
                 </SelectContent>
               </Select>
               <input type="hidden" name="role" value={role} />
