@@ -26,11 +26,14 @@ export async function getProfiles(filter?: {
   assignedToId?: string;
   source?: string;
 }) {
-  await requireStaff();
+  const session = await requireStaff();
+  const isScopedRole = ["SALES", "SERVICE"].includes(session.user.role);
+
   return prisma.profile.findMany({
     where: {
-      ...(filter?.status ? { status: filter.status } : {}),
-      ...(filter?.assignedToId ? { assignedToId: filter.assignedToId } : {}),
+      ...(isScopedRole ? { assignedToId: session.user.id } : {}),
+      ...(!isScopedRole && filter?.status ? { status: filter.status } : {}),
+      ...(!isScopedRole && filter?.assignedToId ? { assignedToId: filter.assignedToId } : {}),
       ...(filter?.source ? { source: filter.source } : {}),
     },
     orderBy: { createdAt: "desc" },

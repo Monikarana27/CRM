@@ -22,9 +22,16 @@ async function logActivity(actorId: string, action: string, entityId: string) {
 }
 
 export async function getLeads(filter?: { assignedToId?: string }) {
-  await requireStaff();
+  const session = await requireStaff();
+  const scopedFilter =
+    session.user.role === "SALES"
+      ? { assignedToId: session.user.id }
+      : filter?.assignedToId
+      ? { assignedToId: filter.assignedToId }
+      : {};
+
   return prisma.lead.findMany({
-    where: filter?.assignedToId ? { assignedToId: filter.assignedToId } : {},
+    where: scopedFilter,
     orderBy: { createdAt: "desc" },
     include: {
       assignedTo: { select: { id: true, name: true } },

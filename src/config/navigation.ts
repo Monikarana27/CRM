@@ -54,9 +54,9 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
   ],
   SALES: [
     { label: "Dashboard", href: "/dashboard/sales", icon: LayoutDashboard },
-    { label: "My Leads", href: "/dashboard/sales/leads", icon: Handshake },
-    { label: "My Profiles", href: "/dashboard/sales/profiles", icon: UserSquare2 },
-    { label: "Follow-ups", href: "/dashboard/sales/follow-ups", icon: CalendarClock },
+    { label: "My Leads", href: "/dashboard/admin/leads", icon: Handshake },
+    { label: "My Profiles", href: "/dashboard/admin/profiles", icon: UserSquare2 },
+    { label: "Follow-ups", href: "/dashboard/admin/meetings", icon: CalendarClock },
   ],
   PROFILE_CREATOR: [
     { label: "Dashboard", href: "/dashboard/profile-creator", icon: LayoutDashboard },

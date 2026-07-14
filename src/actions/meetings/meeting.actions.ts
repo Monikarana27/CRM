@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
@@ -19,9 +19,14 @@ async function logActivity(actorId: string, action: string, entityId: string) {
 }
 
 export async function getMeetings(filter?: { status?: string }) {
-  await requireStaff();
+  const session = await requireStaff();
+  const isScopedRole = ["SALES", "SERVICE"].includes(session.user.role);
+
   return prisma.meeting.findMany({
-    where: filter?.status ? { status: filter.status as any } : {},
+    where: {
+      ...(isScopedRole ? { assignedToId: session.user.id } : {}),
+      ...(filter?.status ? { status: filter.status as any } : {}),
+    },
     orderBy: { scheduledAt: "desc" },
     include: {
       profile: { select: { id: true, name: true, profileCode: true } },
