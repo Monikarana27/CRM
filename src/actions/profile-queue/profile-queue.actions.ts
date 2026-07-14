@@ -1,18 +1,20 @@
-"use server";
+﻿"use server";
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
 import { revalidatePath } from "next/cache";
 
 export async function sendToProfileCreationAction(leadId: string) {
   const session = await auth();
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user) return { error: "You must be logged in." };
 
   const lead = await prisma.lead.findUnique({ where: { id: leadId } });
-  if (!lead) throw new Error("Lead not found");
-  if (lead.status !== "CONTACTED") throw new Error("Lead must be marked Interested (Contacted) first");
+  if (!lead) return { error: "This lead could not be found." };
+  if (lead.status !== "CONTACTED") {
+    return { error: "Please mark this lead as Interested before sending it for profile creation." };
+  }
 
   const existing = await prisma.profileQueue.findUnique({ where: { leadId } });
-  if (existing) throw new Error("Already sent to Profile Creation");
+  if (existing) return { error: "This lead has already been sent for profile creation." };
 
   const queueEntry = await prisma.profileQueue.create({
     data: { leadId, sentById: session.user.id },
@@ -23,7 +25,7 @@ export async function sendToProfileCreationAction(leadId: string) {
   });
 
   revalidatePath("/dashboard/admin/leads");
-  return queueEntry;
+  return { error: null };
 }
 
 export async function getProfileQueue() {
