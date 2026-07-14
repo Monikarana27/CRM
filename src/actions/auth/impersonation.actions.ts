@@ -41,7 +41,12 @@ export async function startImpersonationAction(targetUserId: string) {
     },
   });
 
-  redirect(`/dashboard/${target.role.toLowerCase()}`);
+  const ROLE_ROUTE_MAP: Record<string, string> = {
+  SUPER_ADMIN: "admin", ADMIN: "admin", SALES: "sales",
+  SERVICE: "service", PROFILE_CREATOR: "profile-creator", HR: "hr",
+};
+redirect(`/dashboard/${ROLE_ROUTE_MAP[target.role] ?? target.role.toLowerCase()}`);
+
 }
 
 export async function endImpersonationAction() {

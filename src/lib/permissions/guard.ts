@@ -1,4 +1,4 @@
-﻿import "server-only";
+import "server-only";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/auth";
 import { canAccessRoute, type Role } from "@/lib/permissions/roles";
@@ -8,8 +8,8 @@ const ROLE_ROUTE_MAP: Record<string, string> = {
   ADMIN: "admin",
   SALES: "sales",
   SERVICE: "service",
-  PROFILE_CREATOR: "admin",
-  HR: "admin",
+  PROFILE_CREATOR: "profile-creator",
+  HR: "hr",
 };
 
 export async function requireRole(path: string) {

@@ -6,8 +6,8 @@ const ROLE_ROUTE_MAP: Record<string, string> = {
   ADMIN: "admin",
   SALES: "sales",
   SERVICE: "service",
-  PROFILE_CREATOR: "admin",
-  HR: "admin",
+  PROFILE_CREATOR: "profile-creator",
+  HR: "hr",
 };
 
 export default async function HomePage() {

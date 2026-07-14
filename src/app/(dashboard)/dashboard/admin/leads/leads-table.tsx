@@ -11,6 +11,7 @@ import {
   unassignLeadAction,
   convertLeadToProfileAction,
 } from "@/actions/leads/lead.actions";
+import { sendToProfileCreationAction } from "@/actions/profile-queue/profile-queue.actions";
 import { ArrowRightCircle, Pencil } from "lucide-react";
 type LeadRow = {
   id: string;
