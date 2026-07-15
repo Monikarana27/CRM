@@ -129,12 +129,12 @@ export async function updateEmployeeAction(
   }
 
   const updateData: {
-    name: string;
-    email: string;
-    role: "ADMIN" | "SALES" | "SERVICE";
-    active: boolean;
-    password?: string;
-  } = {
+  name: string;
+  email: string;
+  role: "SUPER_ADMIN" | "ADMIN" | "SALES" | "PROFILE_CREATOR" | "SERVICE" | "HR";
+  active: boolean;
+  password?: string;
+} = {
     name: parsed.data.name,
     email: parsed.data.email,
     role: parsed.data.role,
