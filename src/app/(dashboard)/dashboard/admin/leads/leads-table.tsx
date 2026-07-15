@@ -74,7 +74,16 @@ export function LeadsTable({
 }
 
   const columns: Column<LeadRow>[] = [
-    { key: "name", header: "Name", sortable: true },
+    {
+      key: "name",
+      header: "Name",
+      sortable: true,
+      render: (row) => (
+        <Link href={`/dashboard/admin/leads/${row.id}`} className="font-medium text-primary hover:underline">
+          {row.name}
+        </Link>
+      ),
+    },
     { key: "phone", header: "Phone" },
     { key: "source", header: "Source" },
     {
