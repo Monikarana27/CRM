@@ -7,9 +7,12 @@ import { NAV_CONFIG } from "@/config/navigation";
 import type { Role } from "@/lib/permissions/roles";
 
 const ROLE_LABEL: Record<Role, string> = {
+  SUPER_ADMIN: "Super Admin",
   ADMIN: "Administration",
   SALES: "Sales Workspace",
+  PROFILE_CREATOR: "Profile Creator",
   SERVICE: "Service Workspace",
+  HR: "Human Resources",
 };
 
 export function Sidebar({ role }: { role: Role }) {
