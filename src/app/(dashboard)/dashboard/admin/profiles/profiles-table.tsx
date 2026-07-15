@@ -1,8 +1,9 @@
-"use client";
-
+﻿"use client";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Heart } from "lucide-react";
 import { ProfileAssignAction } from "./profile-assign-action";
 
 type ProfileRow = {
@@ -83,6 +84,18 @@ export function ProfilesTable({
           currentAssignee={row.assignedTo}
           employees={employees}
         />
+      ),
+    },
+    {
+      key: "matches",
+      header: "Matches",
+      render: (row) => (
+        <Button variant="outline" size="sm" asChild>
+          <Link href={`/dashboard/service/matching/${row.id}`}>
+            <Heart className="mr-1.5 h-3.5 w-3.5" />
+            Find Matches
+          </Link>
+        </Button>
       ),
     },
   ];
