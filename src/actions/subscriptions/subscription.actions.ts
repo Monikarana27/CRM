@@ -94,7 +94,7 @@ export async function updateSubscriptionStatusAction(
     data: { status },
   });
 
-  await logActivity(session.user.id, `SERVICE_STATUS_${status}`, serviceId);
+  await logActivity(session.user.id, `SUBSCRIPTION_STATUS_${status}`, subscriptionId);
 
   revalidatePath("/dashboard/admin/subscriptions");
 }
