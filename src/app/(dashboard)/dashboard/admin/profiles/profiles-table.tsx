@@ -50,6 +50,18 @@ export function ProfilesTable({
         </Link>
       ),
     },
+    {
+      key: "manage",
+      header: "Photos",
+      render: (row) => (
+        <Link
+          href={`/dashboard/service/profiles/${row.id}`}
+          className="text-sm text-primary hover:underline"
+        >
+          Manage Photos
+        </Link>
+      ),
+    },
     { key: "name", header: "Name", sortable: true },
     {
       key: "gender",

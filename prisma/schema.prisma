@@ -518,6 +518,7 @@ model ProfileDocument {
   profile    Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
   url        String
   type       DocumentType
+  order      Int          @default(0)
   uploadedAt DateTime     @default(now())
 
   @@index([profileId])
@@ -650,3 +651,4 @@ model Payroll {
   @@unique([userId, month, year])
   @@map("payroll")
 }
+
