@@ -10,11 +10,10 @@ import { redirect } from "next/navigation";
 async function requireAdmin() {
   const session = await auth();
   if (!session?.user || !["ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {
-    throw new Error("Unauthorized");
+    redirect(`/dashboard/${(session?.user?.role ?? "login").toLowerCase()}`);
   }
   return session;
 }
-
 async function logActivity(actorId: string, action: string, entityId: string) {
   await prisma.activityLog.create({
     data: {

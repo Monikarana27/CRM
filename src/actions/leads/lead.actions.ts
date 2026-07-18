@@ -51,13 +51,14 @@ export async function createLeadAction(
   const session = await requireStaff();
 
   const parsed = leadSchema.safeParse({
-    name: formData.get("name"),
-    phone: formData.get("phone"),
-    email: formData.get("email"),
-    source: formData.get("source"),
-    status: formData.get("status") || "NEW",
-    notes: formData.get("notes"),
-  });
+  name: formData.get("name"), 
+  phone: formData.get("phone"),
+  email: formData.get("email"),
+  gender: formData.get("gender"),
+  source: formData.get("source"),
+  status: formData.get("status") || "NEW",
+  notes: formData.get("notes"),
+});
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -177,7 +178,7 @@ export async function convertLeadToProfileAction(leadId: string) {
     redirect(`/dashboard/admin/profiles/${lead.convertedProfileId}/edit`);
   }
 
-  const profileCode = await generateProfileCode("OTHER");
+  const profileCode = await generateProfileCode(lead.gender ?? "OTHER");
 
   const profile = await prisma.profile.create({
     data: {
@@ -186,7 +187,7 @@ export async function convertLeadToProfileAction(leadId: string) {
       phone: lead.phone,
       email: lead.email,
       source: lead.source,
-      gender: "OTHER",
+      gender: lead.gender ?? "OTHER",
       status: "UNASSIGNED",
       createdById: session.user.id,
       partnerPreference: { create: {} },

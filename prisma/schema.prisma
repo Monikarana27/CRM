@@ -233,6 +233,7 @@ enum LeadStatus {
   CONTACTED
   CONVERTED
   PENDING
+  INTERESTED
   NOT_INTERESTED
   CLOSED
 }
@@ -245,6 +246,8 @@ model Lead {
   source      String?
   status      LeadStatus @default(NEW)
   notes       String?    @db.Text
+  gender      Gender?
+  
 
   assignedToId String?
   assignedTo   User?      @relation("AssignedLeads", fields: [assignedToId], references: [id])

@@ -33,6 +33,8 @@ const STATUS_STYLES: Record<string, string> = {
   CONVERTED: "bg-emerald-100 text-emerald-700 border-emerald-200",
   PENDING: "bg-orange-100 text-orange-700 border-orange-200",
   CLOSED: "bg-gray-100 text-gray-700 border-gray-200",
+  INTERESTED: "bg-green-100 text-green-700 border-green-200",
+  NOT_INTERESTED: "bg-red-100 text-red-700 border-red-200",
 };
 
 function ConvertButton({ leadId, disabled }: { leadId: string; disabled: boolean }) {

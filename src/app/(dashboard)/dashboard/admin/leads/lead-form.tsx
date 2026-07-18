@@ -1,5 +1,4 @@
-"use client";
-
+﻿"use client";
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 
 const SOURCE_OPTIONS = ["Website", "Justdial", "Referral", "Walk-in", "Phone Inquiry", "Other"];
-const STATUS_OPTIONS = ["NEW", "CONTACTED", "CONVERTED", "PENDING", "CLOSED"];
+const STATUS_OPTIONS = ["NEW", "CONTACTED", "CONVERTED", "PENDING", "INTERESTED", "NOT_INTERESTED", "CLOSED"];
+const GENDER_OPTIONS = ["MALE", "FEMALE", "OTHER"];
 
 interface LeadFormProps {
   mode: "create" | "edit";
@@ -24,6 +24,7 @@ interface LeadFormProps {
     name: string;
     phone: string;
     email: string | null;
+    gender: string | null;
     source: string | null;
     status: string;
     notes: string | null;
@@ -35,6 +36,7 @@ export function LeadForm({ mode, defaultValues, action }: LeadFormProps) {
   const [state, formAction, isPending] = useActionState(action, { error: null });
   const [source, setSource] = useState(defaultValues?.source ?? "");
   const [status, setStatus] = useState(defaultValues?.status ?? "NEW");
+  const [gender, setGender] = useState(defaultValues?.gender ?? "");
 
   return (
     <Card>
@@ -43,65 +45,47 @@ export function LeadForm({ mode, defaultValues, action }: LeadFormProps) {
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                name="name"
-                defaultValue={defaultValues?.name}
-                placeholder="e.g. Rahul Sharma"
-                required
-              />
+              <Input id="name" name="name" defaultValue={defaultValues?.name} placeholder="e.g. Rahul Sharma" required />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                name="phone"
-                defaultValue={defaultValues?.phone}
-                placeholder="+91 98765 43210"
-                required
-              />
+              <Input id="phone" name="phone" defaultValue={defaultValues?.phone} placeholder="+91 98765 43210" required />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                defaultValue={defaultValues?.email ?? ""}
-                placeholder="rahul@example.com"
-              />
+              <Input id="email" name="email" type="email" defaultValue={defaultValues?.email ?? ""} placeholder="rahul@example.com" />
             </div>
-
+            <div className="space-y-2">
+              <Label>Gender</Label>
+              <Select value={gender} onValueChange={setGender}>
+                <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
+                <SelectContent>
+                  {GENDER_OPTIONS.map((opt) => (
+                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <input type="hidden" name="gender" value={gender} />
+            </div>
             <div className="space-y-2">
               <Label>Source</Label>
               <Select value={source} onValueChange={setSource}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select source" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
                 <SelectContent>
                   {SOURCE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
-                      {opt}
-                    </SelectItem>
+                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <input type="hidden" name="source" value={source} />
             </div>
-
             <div className="space-y-2">
               <Label>Status</Label>
               <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
                 <SelectContent>
                   {STATUS_OPTIONS.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
-                      {opt}
-                    </SelectItem>
+                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -121,9 +105,7 @@ export function LeadForm({ mode, defaultValues, action }: LeadFormProps) {
           </div>
 
           {state?.error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {state.error}
-            </p>
+            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>
           )}
 
           <div className="flex items-center gap-3 pt-2">
