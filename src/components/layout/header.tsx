@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { logoutAction } from "@/actions/auth/login.action";
 import { LogOut, User } from "lucide-react";
+import { NotificationBell } from "@/components/layout/notification-bell";
 
 const ROLE_STYLES: Record<string, string> = {
   ADMIN: "bg-violet-100 text-violet-700 border-violet-200",
@@ -38,6 +39,8 @@ export async function Header() {
         <span className="font-semibold tracking-tight">Sangam CRM</span>
       </div>
 
+      <div className="flex items-center gap-3">
+      <NotificationBell />
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-3 rounded-full py-1 pl-2 pr-1 outline-none transition-colors hover:bg-muted">
           <div className="flex flex-col items-end leading-tight">
@@ -75,6 +78,7 @@ export async function Header() {
           </form>
         </DropdownMenuContent>
       </DropdownMenu>
+      </div>
     </header>
   );
 }

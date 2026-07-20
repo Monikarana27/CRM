@@ -1,9 +1,10 @@
-"use server";
+﻿"use server";
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
 import { hashPassword } from "@/lib/auth/password";
 import { employeeSchema } from "@/lib/validations/employee.schema";
+import { generateTempPassword } from "@/lib/utils/generate-password";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -33,9 +34,17 @@ export async function getEmployees() {
       id: true,
       name: true,
       email: true,
+      phone: true,
+      department: true,
       role: true,
       active: true,
       createdAt: true,
+      _count: {
+        select: {
+          assignedLeads: true,
+          assignedProfiles: true,
+        },
+      },
     },
   });
 }
@@ -48,6 +57,8 @@ export async function getEmployeeById(id: string) {
       id: true,
       name: true,
       email: true,
+      phone: true,
+      department: true,
       role: true,
       active: true,
     },
@@ -63,8 +74,10 @@ export async function createEmployeeAction(
   const parsed = employeeSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
+    phone: formData.get("phone"),
     password: formData.get("password"),
     role: formData.get("role"),
+    department: formData.get("department"),
     active: formData.get("active") === "on",
   });
 
@@ -89,8 +102,10 @@ export async function createEmployeeAction(
     data: {
       name: parsed.data.name,
       email: parsed.data.email,
+      phone: parsed.data.phone || null,
       password: hashedPassword,
       role: parsed.data.role,
+      department: parsed.data.department || null,
       active: parsed.data.active,
     },
   });
@@ -111,8 +126,10 @@ export async function updateEmployeeAction(
   const parsed = employeeSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
+    phone: formData.get("phone"),
     password: formData.get("password"),
     role: formData.get("role"),
+    department: formData.get("department"),
     active: formData.get("active") === "on",
   });
 
@@ -128,15 +145,19 @@ export async function updateEmployeeAction(
   }
 
   const updateData: {
-  name: string;
-  email: string;
-  role: "SUPER_ADMIN" | "ADMIN" | "SALES" | "PROFILE_CREATOR" | "SERVICE" | "HR";
-  active: boolean;
-  password?: string;
-} = {
+    name: string;
+    email: string;
+    phone: string | null;
+    role: "SUPER_ADMIN" | "ADMIN" | "SALES" | "PROFILE_CREATOR" | "SERVICE" | "HR";
+    department: "SALES_EMP" | "PROFILE_EMP" | "SERVICE_EMP" | "HR_EMP" | null;
+    active: boolean;
+    password?: string;
+  } = {
     name: parsed.data.name,
     email: parsed.data.email,
+    phone: parsed.data.phone || null,
     role: parsed.data.role,
+    department: parsed.data.department || null,
     active: parsed.data.active,
   };
 
@@ -170,4 +191,22 @@ export async function toggleEmployeeActiveAction(id: string, active: boolean) {
   );
 
   revalidatePath("/dashboard/admin/employees");
+}
+
+export async function resetEmployeePasswordAction(id: string) {
+  const session = await requireAdmin();
+
+  const tempPassword = generateTempPassword();
+  const hashedPassword = await hashPassword(tempPassword);
+
+  await prisma.user.update({
+    where: { id },
+    data: { password: hashedPassword },
+  });
+
+  await logActivity(session.user.id, "RESET_PASSWORD", id);
+
+  revalidatePath("/dashboard/admin/employees");
+
+  return { password: tempPassword };
 }

@@ -6,8 +6,8 @@ import { revalidatePath } from "next/cache";
 export async function addProfileDocumentAction(profileId: string, url: string, type: "PHOTO" | "ID_PROOF" | "OTHER") {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
-  if (!["SUPER_ADMIN", "ADMIN", "SERVICE"].includes(session.user.role)) {
-    return { error: "Only Service team members can upload photos." };
+  if (!["SUPER_ADMIN", "ADMIN", "SERVICE", "PROFILE_CREATOR"].includes(session.user.role)) {
+    return { error: "You do not have permission to upload photos for this profile." };
   }
 
   if (type === "PHOTO") {
@@ -39,8 +39,8 @@ export async function getProfileDocuments(profileId: string) {
 export async function deleteProfileDocumentAction(id: string, profileId: string) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
-  if (!["SUPER_ADMIN", "ADMIN", "SERVICE"].includes(session.user.role)) {
-    return { error: "Only Service team members can upload photos." };
+  if (!["SUPER_ADMIN", "ADMIN", "SERVICE", "PROFILE_CREATOR"].includes(session.user.role)) {
+    return { error: "You do not have permission to upload photos for this profile." };
   }
   await prisma.profileDocument.delete({ where: { id } });
   revalidatePath(`/dashboard/admin/profiles/${profileId}/edit`);
@@ -49,8 +49,8 @@ export async function deleteProfileDocumentAction(id: string, profileId: string)
 export async function setPrimaryPhotoAction(id: string, profileId: string) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
-  if (!["SUPER_ADMIN", "ADMIN", "SERVICE"].includes(session.user.role)) {
-    return { error: "Only Service team members can upload photos." };
+  if (!["SUPER_ADMIN", "ADMIN", "SERVICE", "PROFILE_CREATOR"].includes(session.user.role)) {
+    return { error: "You do not have permission to upload photos for this profile." };
   }
 
   const photos = await prisma.profileDocument.findMany({

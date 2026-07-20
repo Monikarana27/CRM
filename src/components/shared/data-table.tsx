@@ -15,7 +15,7 @@ import { ChevronLeft, ChevronRight, ArrowUpDown, Search } from "lucide-react";
 
 export interface Column<T> {
   key: string;
-  header: string;
+  header: string | React.ReactNode;
   render?: (row: T) => React.ReactNode;
   sortable?: boolean;
   accessor?: (row: T) => string | number;

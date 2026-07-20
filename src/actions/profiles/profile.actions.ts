@@ -199,10 +199,18 @@ export async function updateProfileAction(
     return { error: "Invalid form data" };
   }
 
+  const currentProfile = await prisma.profile.findUnique({
+    where: { id },
+    select: { approvalStatus: true },
+  });
+
   await prisma.profile.update({
     where: { id },
     data: {
       ...profileData,
+      ...(currentProfile?.approvalStatus === "NEEDS_CHANGES"
+        ? { approvalStatus: "PENDING_APPROVAL" as const, approvalNotes: null }
+        : {}),
       partnerPreference: {
         upsert: {
           create: ppData,
@@ -253,4 +261,58 @@ export async function unassignProfileAction(profileId: string) {
   await logActivity(session.user.id, "UNASSIGN_PROFILE", profileId);
 
   revalidatePath("/dashboard/admin/profiles");
+}
+
+export async function bulkAssignProfilesAction(profileIds: string[], employeeId: string) {
+  const session = await requireStaff();
+
+  await prisma.profile.updateMany({
+    where: { id: { in: profileIds } },
+    data: { assignedToId: employeeId, assignedAt: new Date(), status: "ASSIGNED" },
+  });
+
+  for (const id of profileIds) {
+    await logActivity(session.user.id, "BULK_ASSIGN_PROFILE", id);
+  }
+
+  revalidatePath("/dashboard/admin/profiles");
+}
+
+export async function approveProfileAction(profileId: string) {
+  const session = await requireStaff();
+  if (!["SUPER_ADMIN", "ADMIN"].includes(session.user.role)) {
+    throw new Error("Only Admins can approve profiles");
+  }
+
+  await prisma.profile.update({
+    where: { id: profileId },
+    data: { approvalStatus: "APPROVED", approvalNotes: null },
+  });
+
+  await logActivity(session.user.id, "APPROVE_PROFILE", profileId);
+  revalidatePath("/dashboard/admin/profiles");
+}
+
+export async function rejectProfileAction(profileId: string, notes: string) {
+  const session = await requireStaff();
+  if (!["SUPER_ADMIN", "ADMIN"].includes(session.user.role)) {
+    throw new Error("Only Admins can reject profiles");
+  }
+
+  await prisma.profile.update({
+    where: { id: profileId },
+    data: { approvalStatus: "NEEDS_CHANGES", approvalNotes: notes || null },
+  });
+
+  await logActivity(session.user.id, "REJECT_PROFILE", profileId);
+  revalidatePath("/dashboard/admin/profiles");
+}
+
+export async function getProfileHistory(profileId: string) {
+  await requireStaff();
+  return prisma.activityLog.findMany({
+    where: { entityType: "Profile", entityId: profileId },
+    orderBy: { createdAt: "desc" },
+    include: { actor: { select: { name: true } } },
+  });
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,78 @@ export function ProfileForm({ mode, defaultValues, action }: ProfileFormProps) {
 
   const dv = defaultValues ?? {};
 
+  const formRef = useRef<HTMLFormElement>(null);
+  const draftKey = `profile-draft-${defaultValues?.id ?? "new"}`;
+
+  useEffect(() => {
+    if (!formRef.current) return;
+    const saved = localStorage.getItem(draftKey);
+    if (!saved) return;
+    try {
+      const draft: Record<string, string> = JSON.parse(saved);
+      const form = formRef.current;
+      Object.entries(draft).forEach(([key, value]) => {
+        const field = form.elements.namedItem(key);
+        if (field && "value" in field) {
+          (field as unknown as HTMLInputElement).value = value;
+        }
+      });
+    } catch {
+      // ignore corrupt draft
+    }
+  }, [draftKey]);
+
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form) return;
+
+    const saveDraft = () => {
+      const data = new FormData(form);
+      const draft: Record<string, string> = {};
+      data.forEach((value, key) => {
+        if (typeof value === "string") draft[key] = value;
+      });
+      localStorage.setItem(draftKey, JSON.stringify(draft));
+    };
+
+    const interval = setInterval(saveDraft, 10000);
+    form.addEventListener("change", saveDraft);
+
+    return () => {
+      clearInterval(interval);
+      form.removeEventListener("change", saveDraft);
+    };
+  }, [draftKey]);
+
+  function clearDraft() {
+    localStorage.removeItem(draftKey);
+  }
+
+  function validateAndFocus(): boolean {
+    const form = formRef.current;
+    if (!form) return true;
+
+    const requiredFields = Array.from(form.querySelectorAll<HTMLInputElement>("[required]"));
+    const firstInvalid = requiredFields.find((el) => !el.value.trim());
+
+    if (!firstInvalid) return true;
+
+    const tabWrapper = firstInvalid.closest<HTMLElement>("[data-tab]");
+    const tabId = tabWrapper?.dataset.tab as TabId | undefined;
+    if (tabId) setActiveTab(tabId);
+
+    firstInvalid.classList.add("border-destructive", "ring-2", "ring-destructive");
+    const clearHighlight = () => {
+      firstInvalid.classList.remove("border-destructive", "ring-2", "ring-destructive");
+      firstInvalid.removeEventListener("input", clearHighlight);
+    };
+    firstInvalid.addEventListener("input", clearHighlight);
+
+    setTimeout(() => firstInvalid.focus(), 50);
+
+    return false;
+  }
+
   return (
     <form action={formAction} className="space-y-4">
       {/* Tab pills */}
@@ -73,28 +146,28 @@ export function ProfileForm({ mode, defaultValues, action }: ProfileFormProps) {
       <Card>
         <CardContent className="pt-6">
           {/* All tabs are rendered but hidden, so FormData always includes every field */}
-          <div className={activeTab === "source" ? "" : "hidden"}>
+          <div data-tab="source" className={activeTab === "source" ? "" : "hidden"}>
             <SourceContactTab defaultValues={dv} />
           </div>
-          <div className={activeTab === "basic" ? "" : "hidden"}>
+          <div data-tab="basic" className={activeTab === "basic" ? "" : "hidden"}>
             <BasicInfoTab defaultValues={dv} />
           </div>
-          <div className={activeTab === "location" ? "" : "hidden"}>
+          <div data-tab="location" className={activeTab === "location" ? "" : "hidden"}>
             <LocationTab defaultValues={dv} />
           </div>
-          <div className={activeTab === "religion" ? "" : "hidden"}>
+          <div data-tab="religion" className={activeTab === "religion" ? "" : "hidden"}>
             <ReligionHoroscopeTab defaultValues={dv} />
           </div>
-          <div className={activeTab === "education" ? "" : "hidden"}>
+          <div data-tab="education" className={activeTab === "education" ? "" : "hidden"}>
             <EducationCareerTab defaultValues={dv} />
           </div>
-          <div className={activeTab === "lifestyle" ? "" : "hidden"}>
+          <div data-tab="lifestyle" className={activeTab === "lifestyle" ? "" : "hidden"}>
             <LifestyleTab defaultValues={dv} />
           </div>
-          <div className={activeTab === "family" ? "" : "hidden"}>
+          <div data-tab="family" className={activeTab === "family" ? "" : "hidden"}>
             <FamilyTab defaultValues={dv} />
           </div>
-          <div className={activeTab === "partner" ? "" : "hidden"}>
+          <div data-tab="partner" className={activeTab === "partner" ? "" : "hidden"}>
             <PartnerPreferenceTab defaultValues={dv} />
           </div>
         </CardContent>
@@ -127,7 +200,15 @@ export function ProfileForm({ mode, defaultValues, action }: ProfileFormProps) {
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Button type="submit" disabled={isPending}>
+            <Button
+              type="submit"
+              disabled={isPending}
+              onClick={(e) => {
+                if (!validateAndFocus()) {
+                  e.preventDefault();
+                }
+              }}
+            >
               {isPending
                 ? "Saving..."
                 : mode === "create"

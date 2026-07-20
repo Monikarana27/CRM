@@ -1,18 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { AssignAction } from "@/components/shared/assign-action";
 import {
   assignLeadAction,
   unassignLeadAction,
   convertLeadToProfileAction,
+  bulkAssignLeadsAction,
 } from "@/actions/leads/lead.actions";
 import { sendToProfileCreationAction } from "@/actions/profile-queue/profile-queue.actions";
-import { ArrowRightCircle, Pencil } from "lucide-react";
+import { MoreHorizontal, ArrowRightCircle, Pencil } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+
 type LeadRow = {
   id: string;
   name: string;
@@ -20,6 +35,7 @@ type LeadRow = {
   email: string | null;
   source: string | null;
   status: string;
+  followUpDate: Date | null;
   createdAt: Date;
   assignedTo: { id: string; name: string } | null;
   convertedProfileId: string | null;
@@ -37,29 +53,46 @@ const STATUS_STYLES: Record<string, string> = {
   NOT_INTERESTED: "bg-red-100 text-red-700 border-red-200",
 };
 
-function ConvertButton({ leadId, disabled }: { leadId: string; disabled: boolean }) {
+function LeadRowActions({ lead }: { lead: LeadRow }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  function handleSendToProfile() {
+    startTransition(async () => {
+      const result = await sendToProfileCreationAction(lead.id);
+      setError(result?.error ?? null);
+    });
+  }
+
   return (
-    <div className="flex flex-col gap-1">
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={disabled || isPending}
-        onClick={() =>
-          startTransition(async () => {
-            const result = await sendToProfileCreationAction(leadId);
-            setError(result?.error ?? null);
-          })
-        }
-      >
-        <ArrowRightCircle className="mr-1.5 h-3.5 w-3.5" />
-        {disabled ? "Sent to Queue" : isPending ? "Sending..." : "Send to Profile Creation"}
-      </Button>
+    <div className="flex flex-col items-end gap-1">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <Link href={`/dashboard/admin/leads/${lead.id}/edit`}>
+              <Pencil className="mr-2 h-3.5 w-3.5" />
+              Edit
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={handleSendToProfile}
+            disabled={!!lead.convertedProfileId || isPending}
+          >
+            <ArrowRightCircle className="mr-2 h-3.5 w-3.5" />
+            {lead.convertedProfileId ? "Sent to Queue" : isPending ? "Sending..." : "Send to Profile Creation"}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       {error && <span className="text-xs text-destructive">{error}</span>}
     </div>
   );
 }
+
 export function LeadsTable({
   leads,
   employees,
@@ -67,15 +100,77 @@ export function LeadsTable({
   leads: LeadRow[];
   employees: Employee[];
 }) {
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [sourceFilter, setSourceFilter] = useState("ALL");
+  const [assignedFilter, setAssignedFilter] = useState("ALL");
+
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkEmployeeId, setBulkEmployeeId] = useState("");
+  const [isBulkAssigning, startBulkAssign] = useTransition();
+
+  const sourceOptions = useMemo(
+    () => Array.from(new Set(leads.map((l) => l.source).filter(Boolean))) as string[],
+    [leads]
+  );
+
+  const filtered = useMemo(() => {
+    return leads.filter((l) => {
+      if (statusFilter !== "ALL" && l.status !== statusFilter) return false;
+      if (sourceFilter !== "ALL" && l.source !== sourceFilter) return false;
+      if (assignedFilter === "UNASSIGNED_ONLY" && l.assignedTo) return false;
+      if (assignedFilter !== "ALL" && assignedFilter !== "UNASSIGNED_ONLY" && l.assignedTo?.id !== assignedFilter)
+        return false;
+      return true;
+    });
+  }, [leads, statusFilter, sourceFilter, assignedFilter]);
+
+  const allSelected = filtered.length > 0 && filtered.every((l) => selected.has(l.id));
+
+  function toggleAll() {
+    setSelected(allSelected ? new Set() : new Set(filtered.map((l) => l.id)));
+  }
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function handleBulkAssign() {
+    if (selected.size === 0 || !bulkEmployeeId) return;
+    startBulkAssign(async () => {
+      await bulkAssignLeadsAction(Array.from(selected), bulkEmployeeId);
+      setSelected(new Set());
+      setBulkEmployeeId("");
+    });
+  }
+
   async function handleAssign(leadId: string, employeeId: string) {
     await assignLeadAction(leadId, employeeId);
   }
 
   async function handleUnassign(leadId: string) {
-  await unassignLeadAction(leadId);
-}
+    await unassignLeadAction(leadId);
+  }
 
   const columns: Column<LeadRow>[] = [
+    {
+      key: "select",
+      header: (
+        <input type="checkbox" checked={allSelected} onChange={toggleAll} className="h-4 w-4 rounded border-input" />
+      ),
+      render: (row) => (
+        <input
+          type="checkbox"
+          checked={selected.has(row.id)}
+          onChange={() => toggleOne(row.id)}
+          className="h-4 w-4 rounded border-input"
+        />
+      ),
+    },
     {
       key: "name",
       header: "Name",
@@ -96,6 +191,13 @@ export function LeadsTable({
           {row.status}
         </Badge>
       ),
+    },
+    {
+      key: "followUpDate",
+      header: "Follow-up",
+      sortable: true,
+      accessor: (row) => (row.followUpDate ? new Date(row.followUpDate).getTime() : 0),
+      render: (row) => (row.followUpDate ? new Date(row.followUpDate).toLocaleDateString("en-IN") : "—"),
     },
     {
       key: "createdAt",
@@ -120,25 +222,85 @@ export function LeadsTable({
     {
       key: "actions",
       header: "Actions",
-      render: (row) => (
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/dashboard/admin/leads/${row.id}/edit`}>
-              <Pencil className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
-          <ConvertButton leadId={row.id} disabled={!!row.convertedProfileId} />
-        </div>
-      ),
+      render: (row) => <LeadRowActions lead={row} />,
     },
   ];
 
   return (
-    <DataTable
-      data={leads}
-      columns={columns}
-      searchPlaceholder="Search leads by name or phone..."
-      emptyMessage="No leads yet. Add your first inquiry."
-    />
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/30 p-3">
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Statuses</SelectItem>
+            <SelectItem value="NEW">New</SelectItem>
+            <SelectItem value="CONTACTED">Contacted</SelectItem>
+            <SelectItem value="INTERESTED">Interested</SelectItem>
+            <SelectItem value="CONVERTED">Converted</SelectItem>
+            <SelectItem value="NOT_INTERESTED">Not Interested</SelectItem>
+            <SelectItem value="PENDING">Pending</SelectItem>
+            <SelectItem value="CLOSED">Closed</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={sourceFilter} onValueChange={setSourceFilter}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Source" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Sources</SelectItem>
+            {sourceOptions.map((s) => (
+              <SelectItem key={s} value={s}>{s}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={assignedFilter} onValueChange={setAssignedFilter}>
+          <SelectTrigger className="w-[170px]">
+            <SelectValue placeholder="Assigned Employee" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Employees</SelectItem>
+            <SelectItem value="UNASSIGNED_ONLY">Unassigned</SelectItem>
+            {employees.map((e) => (
+              <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex items-center gap-3 rounded-lg border bg-primary/5 p-3">
+        <span className="text-sm font-medium text-muted-foreground">
+          {selected.size > 0 ? `${selected.size} selected` : "Select rows below to bulk assign"}
+        </span>
+        <Select value={bulkEmployeeId} onValueChange={setBulkEmployeeId}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Assign to employee" />
+          </SelectTrigger>
+          <SelectContent>
+            {employees.map((e) => (
+              <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button size="sm" onClick={handleBulkAssign} disabled={selected.size === 0 || !bulkEmployeeId || isBulkAssigning}>
+          {isBulkAssigning ? "Assigning..." : "Bulk Assign"}
+        </Button>
+        {selected.size > 0 && (
+          <Button size="sm" variant="outline" onClick={() => setSelected(new Set())}>
+            Clear
+          </Button>
+        )}
+      </div>
+
+      <DataTable
+        data={filtered}
+        columns={columns}
+        searchPlaceholder="Search leads by name or phone..."
+        emptyMessage="No leads yet. Add your first inquiry."
+      />
+    </div>
   );
 }

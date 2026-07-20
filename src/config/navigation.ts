@@ -13,6 +13,7 @@ import {
   Activity,
   PhoneCall,
   Target,
+  MessageSquare,
 } from "lucide-react";
 import type { Role } from "@/lib/permissions/roles";
 import type { LucideIcon } from "lucide-react";
@@ -37,6 +38,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
   ],
   ADMIN: [
     { label: "Dashboard", href: "/dashboard/admin", icon: LayoutDashboard },
+    { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
     { label: "Employees", href: "/dashboard/admin/employees", icon: Users },
     { label: "Profiles", href: "/dashboard/admin/profiles", icon: UserSquare2 },
     { label: "Leads", href: "/dashboard/admin/leads", icon: Contact },
@@ -56,15 +58,18 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
   ],
   SALES: [
     { label: "Dashboard", href: "/dashboard/sales", icon: LayoutDashboard },
+    { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
     { label: "My Leads", href: "/dashboard/admin/leads", icon: Handshake },
     { label: "My Profiles", href: "/dashboard/admin/profiles", icon: UserSquare2 },
     { label: "Follow-ups", href: "/dashboard/admin/meetings", icon: CalendarClock },
   ],
   PROFILE_CREATOR: [
     { label: "Dashboard", href: "/dashboard/profile-creator", icon: LayoutDashboard },
+    { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
   ],
   SERVICE: [
     { label: "Dashboard", href: "/dashboard/service", icon: LayoutDashboard },
+    { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
     { label: "Assigned Profiles", href: "/dashboard/service/profiles", icon: UserSquare2 },
     { label: "Meetings", href: "/dashboard/service/meetings", icon: CalendarClock },
     { label: "Welcome Calls", href: "/dashboard/service/welcome-calls", icon: PhoneCall },
@@ -72,6 +77,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
   ],
   HR: [
     { label: "Dashboard", href: "/dashboard/hr", icon: LayoutDashboard },
+    { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
     { label: "Attendance", href: "/dashboard/hr/attendance", icon: CalendarClock },
     { label: "Leave", href: "/dashboard/hr/leave", icon: ClipboardList },
     { label: "Recruitment", href: "/dashboard/hr/recruitment", icon: Users },

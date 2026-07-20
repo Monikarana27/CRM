@@ -47,6 +47,32 @@ async function getTodaysActivityCount(actorId?: string) {
   });
 }
 
+async function getTodaysSummary() {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const [newLeadsToday, profilesCreatedToday, meetingsToday, pendingApprovals, activeServices] =
+    await Promise.all([
+      prisma.lead.count({
+        where: { createdAt: { gte: todayStart, lte: todayEnd } },
+      }),
+      prisma.profile.count({
+        where: { createdAt: { gte: todayStart, lte: todayEnd } },
+      }),
+      prisma.meeting.count({
+        where: { scheduledAt: { gte: todayStart, lte: todayEnd } },
+      }),
+      prisma.profile.count({
+        where: { approvalStatus: "PENDING_APPROVAL" },
+      }),
+      prisma.subscription.count({ where: { status: "ACTIVE" } }),
+    ]);
+
+  return { newLeadsToday, profilesCreatedToday, meetingsToday, pendingApprovals, activeServices };
+}
+
 export async function getAdminStats() {
   const [
     funnel,
@@ -66,6 +92,7 @@ export async function getAdminStats() {
     maleProfiles,
     femaleProfiles,
     profilesOnHold,
+    todaysSummary,
   ] = await Promise.all([
     getLeadFunnel(),
     getProfileAssignmentBreakdown(),
@@ -84,8 +111,8 @@ export async function getAdminStats() {
     prisma.profile.count({ where: { gender: "MALE" } }),
     prisma.profile.count({ where: { gender: "FEMALE" } }),
     prisma.profile.count({ where: { status: "ON_HOLD" } }),
+    getTodaysSummary(),
   ]);
-
   const paidAmountResult = await prisma.payment.aggregate({
     where: { status: "PAID" },
     _sum: { amount: true },
@@ -105,6 +132,7 @@ export async function getAdminStats() {
     },
     meetings: { faceToFaceMeetings, teleMeetings },
     todaysActivityCount,
+    todaysSummary,
   };
 }
 
@@ -159,4 +187,20 @@ export async function getServiceStats(userId: string) {
   ]);
 
   return { assignedProfiles, meetingsToday, activeServiceCount };
+}
+
+export async function getRecentActivity(limit = 10) {
+  const logs = await prisma.activityLog.findMany({
+    take: limit,
+    orderBy: { createdAt: "desc" },
+    include: { actor: { select: { name: true } } },
+  });
+
+  return logs.map((log) => ({
+    id: log.id,
+    actorName: log.actor.name,
+    action: log.action,
+    entityType: log.entityType,
+    createdAt: log.createdAt,
+  }));
 }

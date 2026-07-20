@@ -23,7 +23,14 @@ export default async function EditLeadPage({
         title="Edit Lead"
         subtitle={`Update details for ${lead.name}.`}
       />
-      <LeadForm mode="edit" defaultValues={lead} action={boundAction} />
+      <LeadForm
+        mode="edit"
+        defaultValues={{
+          ...lead,
+          followUpDate: lead.followUpDate ? new Date(lead.followUpDate).toISOString().slice(0, 10) : null,
+        }}
+        action={boundAction}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
@@ -20,6 +20,8 @@ interface EmployeeFormProps {
   defaultValues?: {
     name: string;
     email: string;
+    phone?: string | null;
+    department?: string | null;
     role: string;
     active: boolean;
   };
@@ -29,6 +31,7 @@ interface EmployeeFormProps {
 export function EmployeeForm({ mode, defaultValues, action }: EmployeeFormProps) {
   const [state, formAction, isPending] = useActionState(action, { error: null });
   const [role, setRole] = useState(defaultValues?.role ?? "SALES");
+  const [department, setDepartment] = useState(defaultValues?.department ?? "");
 
   return (
     <Card>
@@ -37,25 +40,17 @@ export function EmployeeForm({ mode, defaultValues, action }: EmployeeFormProps)
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                name="name"
-                defaultValue={defaultValues?.name}
-                placeholder="e.g. Priya Sharma"
-                required
-              />
+              <Input id="name" name="name" defaultValue={defaultValues?.name} placeholder="e.g. Priya Sharma" required />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                defaultValue={defaultValues?.email}
-                placeholder="priya@sangamcrm.com"
-                required
-              />
+              <Input id="email" name="email" type="email" defaultValue={defaultValues?.email} placeholder="priya@sangamcrm.com" required />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input id="phone" name="phone" defaultValue={defaultValues?.phone ?? ""} placeholder="+91 98765 43210" />
             </div>
 
             <div className="space-y-2">
@@ -88,6 +83,22 @@ export function EmployeeForm({ mode, defaultValues, action }: EmployeeFormProps)
               </Select>
               <input type="hidden" name="role" value={role} />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="department">Department</Label>
+              <Select value={department} onValueChange={setDepartment}>
+                <SelectTrigger id="department">
+                  <SelectValue placeholder="Select a department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SALES_EMP">Sales</SelectItem>
+                  <SelectItem value="PROFILE_EMP">Profile</SelectItem>
+                  <SelectItem value="SERVICE_EMP">Service</SelectItem>
+                  <SelectItem value="HR_EMP">HR</SelectItem>
+                </SelectContent>
+              </Select>
+              <input type="hidden" name="department" value={department} />
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -104,18 +115,12 @@ export function EmployeeForm({ mode, defaultValues, action }: EmployeeFormProps)
           </div>
 
           {state?.error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {state.error}
-            </p>
+            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>
           )}
 
           <div className="flex items-center gap-3 pt-2">
             <Button type="submit" disabled={isPending}>
-              {isPending
-                ? "Saving..."
-                : mode === "create"
-                ? "Create Employee"
-                : "Save Changes"}
+              {isPending ? "Saving..." : mode === "create" ? "Create Employee" : "Save Changes"}
             </Button>
             <Button variant="outline" asChild>
               <Link href="/dashboard/admin/employees">

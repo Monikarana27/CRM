@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
 import {
   Select,
   SelectTrigger,
@@ -28,6 +29,7 @@ interface LeadFormProps {
     source: string | null;
     status: string;
     notes: string | null;
+    followUpDate: string | null;
   };
   action: (prevState: unknown, formData: FormData) => Promise<{ error: string | null }>;
 }
@@ -47,9 +49,14 @@ export function LeadForm({ mode, defaultValues, action }: LeadFormProps) {
               <Label htmlFor="name">Name</Label>
               <Input id="name" name="name" defaultValue={defaultValues?.name} placeholder="e.g. Rahul Sharma" required />
             </div>
+          
             <div className="space-y-2">
               <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" name="phone" defaultValue={defaultValues?.phone} placeholder="+91 98765 43210" required />
+              <PhoneInput name="phone" defaultValue={defaultValues?.phone} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="followUpDate">Follow-up Date</Label>
+              <Input id="followUpDate" name="followUpDate" type="date" defaultValue={defaultValues?.followUpDate ?? ""} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

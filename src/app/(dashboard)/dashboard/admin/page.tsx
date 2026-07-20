@@ -3,11 +3,19 @@ import { StatWidget } from "@/components/widgets/stat-widget";
 import { FunnelBreakdown } from "@/components/widgets/funnel-breakdown";
 import { ConversionRateCard } from "@/components/widgets/conversion-rate-card";
 import { DashboardHero } from "@/components/layout/dashboard-hero";
-import { getAdminStats } from "@/lib/stats/dashboard-stats";
+import { getAdminStats, getRecentActivity } from "@/lib/stats/dashboard-stats";
+import { QuickActions } from "@/components/widgets/quick-actions";
+import { NotificationsPanel } from "@/components/widgets/notifications-panel";
+import { getNotifications } from "@/lib/stats/notifications";
+import { RecentActivity } from "@/components/widgets/recent-activity";
 
 export default async function AdminDashboardPage() {
   const session = await auth();
-  const stats = await getAdminStats();
+  const [stats, recentActivity, notifications] = await Promise.all([
+    getAdminStats(),
+    getRecentActivity(10),
+    getNotifications(),
+  ]);
 
   const servicesProgress =
     stats.services.activeServices + stats.services.holdServices + stats.services.expiredServices > 0
@@ -97,6 +105,8 @@ export default async function AdminDashboardPage() {
         subtitle="Here's what's happening across Sangam CRM today."
       />
 
+      <QuickActions />
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatWidget
           title="Profiles"
@@ -125,6 +135,20 @@ export default async function AdminDashboardPage() {
           progress={{ value: servicesProgress, colorClass: "bg-emerald-500" }}
           actionLabel="View Subscriptions"
           actionHref="/dashboard/admin/subscriptions"
+        />
+        <StatWidget
+          title="Today's Summary"
+          badge={{ text: "Live", className: "bg-blue-100 text-blue-700 border-blue-200" }}
+          lines={[
+            { label: "New Leads", value: stats.todaysSummary.newLeadsToday },
+            { label: "Profiles Created", value: stats.todaysSummary.profilesCreatedToday },
+            { label: "Meetings Today", value: stats.todaysSummary.meetingsToday },
+            { label: "Pending Approvals", value: stats.todaysSummary.pendingApprovals },
+            { label: "Active Services", value: stats.todaysSummary.activeServices },
+          ]}
+          progress={{ value: 100, colorClass: "bg-blue-500" }}
+          actionLabel="View Approvals"
+          actionHref="/dashboard/admin/profiles?filter=pending-approval"
         />
 
         <StatWidget
@@ -168,12 +192,17 @@ export default async function AdminDashboardPage() {
             rows={funnelRows}
           />
         </div>
-        <ConversionRateCard
-          rate={stats.leads.conversionRate}
-          month={currentMonth}
-          todaysActivityCount={stats.todaysActivityCount}
-        />
+        <div className="flex flex-col gap-4">
+          <ConversionRateCard
+            rate={stats.leads.conversionRate}
+            month={currentMonth}
+            todaysActivityCount={stats.todaysActivityCount}
+          />
+          <RecentActivity items={recentActivity} />
+          <NotificationsPanel items={notifications} />
+        </div>
       </div>
     </div>
   );
 }
+

@@ -51,17 +51,25 @@ export async function createLeadAction(
   const session = await requireStaff();
 
   const parsed = leadSchema.safeParse({
-  name: formData.get("name"), 
-  phone: formData.get("phone"),
-  email: formData.get("email"),
-  gender: formData.get("gender"),
-  source: formData.get("source"),
-  status: formData.get("status") || "NEW",
-  notes: formData.get("notes"),
-});
+    name: formData.get("name"),
+    phone: formData.get("phone"),
+    email: formData.get("email"),
+    gender: formData.get("gender"),
+    source: formData.get("source"),
+    status: formData.get("status") || "NEW",
+    notes: formData.get("notes"),
+    followUpDate: formData.get("followUpDate"),
+  });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
+  }
+
+  const existing = await prisma.lead.findFirst({
+    where: { phone: parsed.data.phone },
+  });
+  if (existing) {
+    return { error: "A lead with this phone number already exists." };
   }
 
   const lead = await prisma.lead.create({
@@ -72,6 +80,7 @@ export async function createLeadAction(
       source: parsed.data.source || null,
       status: parsed.data.status,
       notes: parsed.data.notes || null,
+      followUpDate: parsed.data.followUpDate ? new Date(parsed.data.followUpDate) : null,
       createdById: session.user.id,
     },
   });
@@ -96,10 +105,18 @@ export async function updateLeadAction(
     source: formData.get("source"),
     status: formData.get("status") || "NEW",
     notes: formData.get("notes"),
+    followUpDate: formData.get("followUpDate"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
+  }
+
+  const existing = await prisma.lead.findFirst({
+    where: { phone: parsed.data.phone, NOT: { id } },
+  });
+  if (existing) {
+    return { error: "Another lead already uses this phone number." };
   }
 
   await prisma.lead.update({
@@ -111,6 +128,7 @@ export async function updateLeadAction(
       source: parsed.data.source || null,
       status: parsed.data.status,
       notes: parsed.data.notes || null,
+      followUpDate: parsed.data.followUpDate ? new Date(parsed.data.followUpDate) : null,
     },
   });
 
@@ -119,7 +137,6 @@ export async function updateLeadAction(
   revalidatePath("/dashboard/admin/leads");
   redirect("/dashboard/admin/leads");
 }
-
 export async function assignLeadAction(leadId: string, employeeId: string) {
   const session = await requireStaff();
 
