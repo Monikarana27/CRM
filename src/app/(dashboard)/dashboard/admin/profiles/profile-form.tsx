@@ -14,8 +14,9 @@ import { EducationCareerTab } from "./tabs/education-career-tab";
 import { LifestyleTab } from "./tabs/lifestyle-tab";
 import { FamilyTab } from "./tabs/family-tab";
 import { PartnerPreferenceTab } from "./tabs/partner-preference-tab";
+import { PhotosTab } from "@/components/shared/photos-tab";
 
-const TABS = [
+const BASE_TABS = [
   { id: "source", label: "Source & Contact" },
   { id: "basic", label: "Basic Info" },
   { id: "location", label: "Location" },
@@ -26,7 +27,9 @@ const TABS = [
   { id: "partner", label: "Partner Preference" },
 ] as const;
 
-type TabId = (typeof TABS)[number]["id"];
+const PHOTOS_TAB = { id: "photos", label: "Photos" } as const;
+
+type TabId = (typeof BASE_TABS)[number]["id"] | "photos";
 
 interface ProfileFormProps {
   mode: "create" | "edit";
@@ -38,18 +41,20 @@ export function ProfileForm({ mode, defaultValues, action }: ProfileFormProps) {
   const [state, formAction, isPending] = useActionState(action, { error: null });
   const [activeTab, setActiveTab] = useState<TabId>("source");
 
+  const dv = defaultValues ?? {};
+  const showPhotos = mode === "edit" && !!dv.id;
+  const TABS = showPhotos ? [...BASE_TABS, PHOTOS_TAB] : BASE_TABS;
+
   const currentIndex = TABS.findIndex((t) => t.id === activeTab);
   const isLastTab = currentIndex === TABS.length - 1;
   const isFirstTab = currentIndex === 0;
 
   function goNext() {
-    if (!isLastTab) setActiveTab(TABS[currentIndex + 1].id);
+    if (!isLastTab) setActiveTab(TABS[currentIndex + 1].id as TabId);
   }
   function goBack() {
-    if (!isFirstTab) setActiveTab(TABS[currentIndex - 1].id);
+    if (!isFirstTab) setActiveTab(TABS[currentIndex - 1].id as TabId);
   }
-
-  const dv = defaultValues ?? {};
 
   const formRef = useRef<HTMLFormElement>(null);
   const draftKey = `profile-draft-${defaultValues?.id ?? "new"}`;
@@ -94,10 +99,6 @@ export function ProfileForm({ mode, defaultValues, action }: ProfileFormProps) {
     };
   }, [draftKey]);
 
-  function clearDraft() {
-    localStorage.removeItem(draftKey);
-  }
-
   function validateAndFocus(): boolean {
     const form = formRef.current;
     if (!form) return true;
@@ -124,14 +125,13 @@ export function ProfileForm({ mode, defaultValues, action }: ProfileFormProps) {
   }
 
   return (
-    <form action={formAction} className="space-y-4">
-      {/* Tab pills */}
+    <form ref={formRef} action={formAction} className="space-y-4">
       <div className="flex flex-wrap gap-2 border-b pb-4">
         {TABS.map((tab, idx) => (
           <button
             key={tab.id}
             type="button"
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => setActiveTab(tab.id as TabId)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
               activeTab === tab.id
                 ? "bg-primary text-primary-foreground"
@@ -145,7 +145,6 @@ export function ProfileForm({ mode, defaultValues, action }: ProfileFormProps) {
 
       <Card>
         <CardContent className="pt-6">
-          {/* All tabs are rendered but hidden, so FormData always includes every field */}
           <div data-tab="source" className={activeTab === "source" ? "" : "hidden"}>
             <SourceContactTab defaultValues={dv} />
           </div>
@@ -170,13 +169,16 @@ export function ProfileForm({ mode, defaultValues, action }: ProfileFormProps) {
           <div data-tab="partner" className={activeTab === "partner" ? "" : "hidden"}>
             <PartnerPreferenceTab defaultValues={dv} />
           </div>
+          {showPhotos && (
+            <div data-tab="photos" className={activeTab === "photos" ? "" : "hidden"}>
+              <PhotosTab profileId={dv.id} />
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {state?.error && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {state.error}
-        </p>
+        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>
       )}
 
       <div className="flex items-center justify-between">
@@ -185,12 +187,7 @@ export function ProfileForm({ mode, defaultValues, action }: ProfileFormProps) {
         </Button>
 
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={goBack}
-            disabled={isFirstTab}
-          >
+          <Button type="button" variant="outline" onClick={goBack} disabled={isFirstTab}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
@@ -209,11 +206,7 @@ export function ProfileForm({ mode, defaultValues, action }: ProfileFormProps) {
                 }
               }}
             >
-              {isPending
-                ? "Saving..."
-                : mode === "create"
-                ? "Create Profile"
-                : "Save Changes"}
+              {isPending ? "Saving..." : mode === "create" ? "Create Profile" : "Save Changes"}
             </Button>
           )}
         </div>

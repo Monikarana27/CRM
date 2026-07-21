@@ -49,6 +49,7 @@ model User {
   mentionsReceived    WorkspaceMention[] @relation("MentionedUser")
   notificationsReceived Notification[]  @relation("NotificationRecipient")
   notificationsSent   Notification[]    @relation("NotificationActor")
+  callLogsCreated      CallLog[] @relation("CallLogCreatedBy")
 
   @@index([role])
   @@index([email])
@@ -403,6 +404,9 @@ enum CallOutcome {
   BUSY
   INVALID_NUMBER
   FOLLOW_UP_NEEDED
+  WRONG_NUMBER
+  INTERESTED
+  CALLBACK
 }
 
 model CallLog {
@@ -415,10 +419,17 @@ model CallLog {
   outcome     CallOutcome @default(CONNECTED)
   notes       String?     @db.Text
 
+  durationSeconds Int?
+  nextFollowUpAt  DateTime?
+  recordingUrl    String?
+  qualityScore    Int?
+
   createdById String?
+  createdBy   User?       @relation("CallLogCreatedBy", fields: [createdById], references: [id])
   createdAt   DateTime    @default(now())
 
   @@index([profileId])
+  @@index([createdById])
   @@map("call_logs")
 }
 

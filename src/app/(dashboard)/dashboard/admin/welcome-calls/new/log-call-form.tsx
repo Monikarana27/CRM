@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectTrigger,
@@ -20,6 +21,9 @@ const OUTCOME_OPTIONS = [
   "CONNECTED",
   "NOT_ANSWERED",
   "BUSY",
+  "WRONG_NUMBER",
+  "INTERESTED",
+  "CALLBACK",
   "INVALID_NUMBER",
   "FOLLOW_UP_NEEDED",
 ];
@@ -71,6 +75,43 @@ export function LogCallForm({ profiles, action }: LogCallFormProps) {
                 </SelectContent>
               </Select>
               <input type="hidden" name="outcome" value={outcome} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nextFollowUpAt">Next Follow-up</Label>
+              <Input id="nextFollowUpAt" name="nextFollowUpAt" type="date" />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Duration</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  name="durationMinutes"
+                  type="number"
+                  min="0"
+                  placeholder="Min"
+                  className="w-20"
+                />
+                <span className="text-muted-foreground">:</span>
+                <Input
+                  name="durationSeconds"
+                  type="number"
+                  min="0"
+                  max="59"
+                  placeholder="Sec"
+                  className="w-20"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="recordingUrl">Call Recording Link</Label>
+              <Input id="recordingUrl" name="recordingUrl" type="url" placeholder="https://..." />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="qualityScore">Call Quality Score (1-5)</Label>
+              <Input id="qualityScore" name="qualityScore" type="number" min="1" max="5" />
             </div>
           </div>
 

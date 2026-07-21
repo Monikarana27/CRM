@@ -173,7 +173,15 @@ export async function getServiceStats(userId: string) {
   const todayEnd = new Date();
   todayEnd.setHours(23, 59, 59, 999);
 
-  const [assignedProfiles, meetingsToday, activeServiceCount] = await Promise.all([
+  const [
+    assignedProfiles,
+    meetingsToday,
+    activeServiceCount,
+    onHoldProfiles,
+    expiredServiceCount,
+    upcomingMeetings,
+    todaysActivityCount,
+  ] = await Promise.all([
     prisma.profile.count({ where: { assignedToId: userId } }),
     prisma.meeting.count({
       where: {
@@ -184,9 +192,32 @@ export async function getServiceStats(userId: string) {
     prisma.subscription.count({
       where: { status: "ACTIVE", profile: { assignedToId: userId } },
     }),
+    prisma.profile.count({ where: { assignedToId: userId, status: "ON_HOLD" } }),
+    prisma.subscription.count({
+      where: { status: "EXPIRED", profile: { assignedToId: userId } },
+    }),
+    prisma.meeting.findMany({
+      where: {
+        assignedToId: userId,
+        scheduledAt: { gte: todayStart },
+        status: "SCHEDULED",
+      },
+      orderBy: { scheduledAt: "asc" },
+      take: 5,
+      include: { profile: { select: { name: true } } },
+    }),
+    getTodaysActivityCount(userId),
   ]);
 
-  return { assignedProfiles, meetingsToday, activeServiceCount };
+  return {
+    assignedProfiles,
+    meetingsToday,
+    activeServiceCount,
+    onHoldProfiles,
+    expiredServiceCount,
+    upcomingMeetings,
+    todaysActivityCount,
+  };
 }
 
 export async function getRecentActivity(limit = 10) {

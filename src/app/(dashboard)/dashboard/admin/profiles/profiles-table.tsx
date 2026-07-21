@@ -63,9 +63,11 @@ function calculateAge(dob: Date | null): number | null {
 export function ProfilesTable({
   profiles,
   employees,
+  canAssign = true,
 }: {
   profiles: ProfileRow[];
   employees: Employee[];
+  canAssign?: boolean;
 }) {
   const [genderFilter, setGenderFilter] = useState("ALL");
   const [religionFilter, setReligionFilter] = useState("ALL");
@@ -94,15 +96,17 @@ export function ProfilesTable({
       if (religionFilter !== "ALL" && p.religion !== religionFilter) return false;
       if (cityFilter !== "ALL" && p.city !== cityFilter) return false;
       if (approvalFilter !== "ALL" && p.approvalStatus !== approvalFilter) return false;
-      if (assignedFilter === "UNASSIGNED_ONLY" && p.assignedTo) return false;
-      if (assignedFilter !== "ALL" && assignedFilter !== "UNASSIGNED_ONLY" && p.assignedTo?.id !== assignedFilter)
-        return false;
+      if (canAssign) {
+        if (assignedFilter === "UNASSIGNED_ONLY" && p.assignedTo) return false;
+        if (assignedFilter !== "ALL" && assignedFilter !== "UNASSIGNED_ONLY" && p.assignedTo?.id !== assignedFilter)
+          return false;
+      }
       const age = calculateAge(p.dob);
       if (minAge && (age === null || age < parseInt(minAge))) return false;
       if (maxAge && (age === null || age > parseInt(maxAge))) return false;
       return true;
     });
-  }, [profiles, genderFilter, religionFilter, cityFilter, approvalFilter, assignedFilter, minAge, maxAge]);
+  }, [profiles, genderFilter, religionFilter, cityFilter, approvalFilter, assignedFilter, minAge, maxAge, canAssign]);
 
   const allSelected = filtered.length > 0 && filtered.every((p) => selected.has(p.id));
 
@@ -133,25 +137,29 @@ export function ProfilesTable({
   }
 
   const columns: Column<ProfileRow>[] = [
-    {
-      key: "select",
-      header: (
-        <input
-          type="checkbox"
-          checked={allSelected}
-          onChange={toggleAll}
-          className="h-4 w-4 rounded border-input"
-        />
-      ),
-      render: (row) => (
-        <input
-          type="checkbox"
-          checked={selected.has(row.id)}
-          onChange={() => toggleOne(row.id)}
-          className="h-4 w-4 rounded border-input"
-        />
-      ),
-    },
+    ...(canAssign
+      ? [
+          {
+            key: "select",
+            header: (
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleAll}
+                className="h-4 w-4 rounded border-input"
+              />
+            ),
+            render: (row: ProfileRow) => (
+              <input
+                type="checkbox"
+                checked={selected.has(row.id)}
+                onChange={() => toggleOne(row.id)}
+                className="h-4 w-4 rounded border-input"
+              />
+            ),
+          } as Column<ProfileRow>,
+        ]
+      : []),
     {
       key: "profileCode",
       header: "ID",
@@ -222,9 +230,12 @@ export function ProfilesTable({
     {
       key: "assign",
       header: "Assigned To",
-      render: (row) => (
-        <ProfileAssignAction profileId={row.id} currentAssignee={row.assignedTo} employees={employees} />
-      ),
+      render: (row) =>
+        canAssign ? (
+          <ProfileAssignAction profileId={row.id} currentAssignee={row.assignedTo} employees={employees} />
+        ) : (
+          <span className="text-sm text-muted-foreground">{row.assignedTo?.name ?? "—"}</span>
+        ),
     },
     {
       key: "matches",
@@ -314,43 +325,47 @@ export function ProfilesTable({
           </SelectContent>
         </Select>
 
-        <Select value={assignedFilter} onValueChange={setAssignedFilter}>
-          <SelectTrigger className="w-[170px]">
-            <SelectValue placeholder="Assigned Employee" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All Employees</SelectItem>
-            <SelectItem value="UNASSIGNED_ONLY">Unassigned</SelectItem>
-            {employees.map((e) => (
-              <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="flex items-center gap-3 rounded-lg border bg-primary/5 p-3">
-        <span className="text-sm font-medium text-muted-foreground">
-          {selected.size > 0 ? `${selected.size} selected` : "Select rows below to bulk assign"}
-        </span>
-        <Select value={bulkEmployeeId} onValueChange={setBulkEmployeeId}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Assign to employee" />
-          </SelectTrigger>
-          <SelectContent>
-            {employees.map((e) => (
-              <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button size="sm" onClick={handleBulkAssign} disabled={selected.size === 0 || !bulkEmployeeId || isBulkAssigning}>
-          {isBulkAssigning ? "Assigning..." : "Bulk Assign"}
-        </Button>
-        {selected.size > 0 && (
-          <Button size="sm" variant="outline" onClick={() => setSelected(new Set())}>
-            Clear
-          </Button>
+        {canAssign && (
+          <Select value={assignedFilter} onValueChange={setAssignedFilter}>
+            <SelectTrigger className="w-[170px]">
+              <SelectValue placeholder="Assigned Employee" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Employees</SelectItem>
+              <SelectItem value="UNASSIGNED_ONLY">Unassigned</SelectItem>
+              {employees.map((e) => (
+                <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
       </div>
+
+      {canAssign && (
+        <div className="flex items-center gap-3 rounded-lg border bg-primary/5 p-3">
+          <span className="text-sm font-medium text-muted-foreground">
+            {selected.size > 0 ? `${selected.size} selected` : "Select rows below to bulk assign"}
+          </span>
+          <Select value={bulkEmployeeId} onValueChange={setBulkEmployeeId}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Assign to employee" />
+            </SelectTrigger>
+            <SelectContent>
+              {employees.map((e) => (
+                <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button size="sm" onClick={handleBulkAssign} disabled={selected.size === 0 || !bulkEmployeeId || isBulkAssigning}>
+            {isBulkAssigning ? "Assigning..." : "Bulk Assign"}
+          </Button>
+          {selected.size > 0 && (
+            <Button size="sm" variant="outline" onClick={() => setSelected(new Set())}>
+              Clear
+            </Button>
+          )}
+        </div>
+      )}
 
       <DataTable
         data={filtered}

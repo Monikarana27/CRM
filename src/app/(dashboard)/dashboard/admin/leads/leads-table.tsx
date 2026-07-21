@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -16,11 +17,10 @@ import { AssignAction } from "@/components/shared/assign-action";
 import {
   assignLeadAction,
   unassignLeadAction,
-  convertLeadToProfileAction,
   bulkAssignLeadsAction,
 } from "@/actions/leads/lead.actions";
 import { sendToProfileCreationAction } from "@/actions/profile-queue/profile-queue.actions";
-import { MoreHorizontal, ArrowRightCircle, Pencil } from "lucide-react";
+import { MoreHorizontal, ArrowRightCircle, Pencil, CheckCircle2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -39,6 +39,7 @@ type LeadRow = {
   createdAt: Date;
   assignedTo: { id: string; name: string } | null;
   convertedProfileId: string | null;
+  profileQueue: { id: string; status: string } | null;
 };
 
 type Employee = { id: string; name: string };
@@ -64,6 +65,17 @@ function LeadRowActions({ lead }: { lead: LeadRow }) {
     });
   }
 
+  if (lead.profileQueue) {
+    return (
+      <div className="flex justify-end">
+        <Badge variant="outline" className="gap-1 bg-emerald-100 text-emerald-700 border-emerald-200">
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          {lead.profileQueue.status === "COMPLETED" ? "Profile Created" : "In Profile Queue"}
+        </Badge>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-end gap-1">
       <DropdownMenu>
@@ -79,12 +91,9 @@ function LeadRowActions({ lead }: { lead: LeadRow }) {
               Edit
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={handleSendToProfile}
-            disabled={!!lead.convertedProfileId || isPending}
-          >
+          <DropdownMenuItem onSelect={handleSendToProfile} disabled={isPending}>
             <ArrowRightCircle className="mr-2 h-3.5 w-3.5" />
-            {lead.convertedProfileId ? "Sent to Queue" : isPending ? "Sending..." : "Send to Profile Creation"}
+            {isPending ? "Sending..." : "Send to Profile Creation"}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -92,13 +101,14 @@ function LeadRowActions({ lead }: { lead: LeadRow }) {
     </div>
   );
 }
-
 export function LeadsTable({
   leads,
   employees,
+  canAssign = true,
 }: {
   leads: LeadRow[];
   employees: Employee[];
+  canAssign?: boolean;
 }) {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [sourceFilter, setSourceFilter] = useState("ALL");
@@ -117,12 +127,14 @@ export function LeadsTable({
     return leads.filter((l) => {
       if (statusFilter !== "ALL" && l.status !== statusFilter) return false;
       if (sourceFilter !== "ALL" && l.source !== sourceFilter) return false;
-      if (assignedFilter === "UNASSIGNED_ONLY" && l.assignedTo) return false;
-      if (assignedFilter !== "ALL" && assignedFilter !== "UNASSIGNED_ONLY" && l.assignedTo?.id !== assignedFilter)
-        return false;
+      if (canAssign) {
+        if (assignedFilter === "UNASSIGNED_ONLY" && l.assignedTo) return false;
+        if (assignedFilter !== "ALL" && assignedFilter !== "UNASSIGNED_ONLY" && l.assignedTo?.id !== assignedFilter)
+          return false;
+      }
       return true;
     });
-  }, [leads, statusFilter, sourceFilter, assignedFilter]);
+  }, [leads, statusFilter, sourceFilter, assignedFilter, canAssign]);
 
   const allSelected = filtered.length > 0 && filtered.every((l) => selected.has(l.id));
 
@@ -157,20 +169,24 @@ export function LeadsTable({
   }
 
   const columns: Column<LeadRow>[] = [
-    {
-      key: "select",
-      header: (
-        <input type="checkbox" checked={allSelected} onChange={toggleAll} className="h-4 w-4 rounded border-input" />
-      ),
-      render: (row) => (
-        <input
-          type="checkbox"
-          checked={selected.has(row.id)}
-          onChange={() => toggleOne(row.id)}
-          className="h-4 w-4 rounded border-input"
-        />
-      ),
-    },
+    ...(canAssign
+      ? [
+          {
+            key: "select",
+            header: (
+              <input type="checkbox" checked={allSelected} onChange={toggleAll} className="h-4 w-4 rounded border-input" />
+            ),
+            render: (row: LeadRow) => (
+              <input
+                type="checkbox"
+                checked={selected.has(row.id)}
+                onChange={() => toggleOne(row.id)}
+                className="h-4 w-4 rounded border-input"
+              />
+            ),
+          } as Column<LeadRow>,
+        ]
+      : []),
     {
       key: "name",
       header: "Name",
@@ -209,15 +225,18 @@ export function LeadsTable({
     {
       key: "assign",
       header: "Assigned To",
-      render: (row) => (
-        <AssignAction
-          entityId={row.id}
-          currentAssignee={row.assignedTo}
-          employees={employees}
-          onAssign={handleAssign}
-          onUnassign={handleUnassign}
-        />
-      ),
+      render: (row) =>
+        canAssign ? (
+          <AssignAction
+            entityId={row.id}
+            currentAssignee={row.assignedTo}
+            employees={employees}
+            onAssign={handleAssign}
+            onUnassign={handleUnassign}
+          />
+        ) : (
+          <span className="text-sm text-muted-foreground">{row.assignedTo?.name ?? "—"}</span>
+        ),
     },
     {
       key: "actions",
@@ -257,43 +276,47 @@ export function LeadsTable({
           </SelectContent>
         </Select>
 
-        <Select value={assignedFilter} onValueChange={setAssignedFilter}>
-          <SelectTrigger className="w-[170px]">
-            <SelectValue placeholder="Assigned Employee" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All Employees</SelectItem>
-            <SelectItem value="UNASSIGNED_ONLY">Unassigned</SelectItem>
-            {employees.map((e) => (
-              <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="flex items-center gap-3 rounded-lg border bg-primary/5 p-3">
-        <span className="text-sm font-medium text-muted-foreground">
-          {selected.size > 0 ? `${selected.size} selected` : "Select rows below to bulk assign"}
-        </span>
-        <Select value={bulkEmployeeId} onValueChange={setBulkEmployeeId}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Assign to employee" />
-          </SelectTrigger>
-          <SelectContent>
-            {employees.map((e) => (
-              <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button size="sm" onClick={handleBulkAssign} disabled={selected.size === 0 || !bulkEmployeeId || isBulkAssigning}>
-          {isBulkAssigning ? "Assigning..." : "Bulk Assign"}
-        </Button>
-        {selected.size > 0 && (
-          <Button size="sm" variant="outline" onClick={() => setSelected(new Set())}>
-            Clear
-          </Button>
+        {canAssign && (
+          <Select value={assignedFilter} onValueChange={setAssignedFilter}>
+            <SelectTrigger className="w-[170px]">
+              <SelectValue placeholder="Assigned Employee" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Employees</SelectItem>
+              <SelectItem value="UNASSIGNED_ONLY">Unassigned</SelectItem>
+              {employees.map((e) => (
+                <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
       </div>
+
+      {canAssign && (
+        <div className="flex items-center gap-3 rounded-lg border bg-primary/5 p-3">
+          <span className="text-sm font-medium text-muted-foreground">
+            {selected.size > 0 ? `${selected.size} selected` : "Select rows below to bulk assign"}
+          </span>
+          <Select value={bulkEmployeeId} onValueChange={setBulkEmployeeId}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Assign to employee" />
+            </SelectTrigger>
+            <SelectContent>
+              {employees.map((e) => (
+                <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button size="sm" onClick={handleBulkAssign} disabled={selected.size === 0 || !bulkEmployeeId || isBulkAssigning}>
+            {isBulkAssigning ? "Assigning..." : "Bulk Assign"}
+          </Button>
+          {selected.size > 0 && (
+            <Button size="sm" variant="outline" onClick={() => setSelected(new Set())}>
+              Clear
+            </Button>
+          )}
+        </div>
+      )}
 
       <DataTable
         data={filtered}

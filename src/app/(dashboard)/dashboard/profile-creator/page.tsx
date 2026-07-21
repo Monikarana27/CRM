@@ -2,6 +2,69 @@ import { DashboardHero } from "@/components/layout/dashboard-hero";
 import { getProfileCreatorDashboard } from "@/actions/profile-queue/profile-queue.actions";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Clock, Loader2, AlertTriangle, CheckCircle2, ChevronRight, Inbox } from "lucide-react";
+
+const STATUS_STYLES: Record<string, string> = {
+  PENDING: "bg-amber-100 text-amber-700 border-amber-200",
+  IN_PROGRESS: "bg-blue-100 text-blue-700 border-blue-200",
+};
+
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  colorClass,
+}: {
+  label: string;
+  value: number;
+  icon: React.ElementType;
+  colorClass: string;
+}) {
+  return (
+    <Card>
+      <CardContent className="flex items-center gap-4 p-4">
+        <div className={`flex h-11 w-11 items-center justify-center rounded-lg ${colorClass}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="text-2xl font-bold tabular-nums">{value}</p>
+          <p className="text-xs text-muted-foreground">{label}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function QueueRow({
+  href,
+  name,
+  phone,
+  status,
+}: {
+  href: string;
+  name: string;
+  phone: string;
+  status: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50"
+    >
+      <div>
+        <p className="font-medium">{name}</p>
+        <p className="text-sm text-muted-foreground">{phone}</p>
+      </div>
+      <div className="flex items-center gap-3">
+        <Badge variant="outline" className={STATUS_STYLES[status] ?? ""}>
+          {status.replace("_", " ")}
+        </Badge>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </div>
+    </Link>
+  );
+}
 
 export default async function ProfileCreatorDashboard() {
   const { pending, inProgress, completedToday, returnedForCorrection } = await getProfileCreatorDashboard();
@@ -10,57 +73,120 @@ export default async function ProfileCreatorDashboard() {
     <div className="space-y-6">
       <DashboardHero
         title="Profile Creator Dashboard"
-        subtitle={`${pending.length} pending · ${inProgress.length} in progress · ${returnedForCorrection.length} returned`}
+        subtitle="Pick up leads, build profiles, and track what's in flight."
       />
 
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <StatCard label="Pending" value={pending.length} icon={Clock} colorClass="bg-amber-100 text-amber-700" />
+        <StatCard label="In Progress" value={inProgress.length} icon={Loader2} colorClass="bg-blue-100 text-blue-700" />
+        <StatCard label="Returned" value={returnedForCorrection.length} icon={AlertTriangle} colorClass="bg-red-100 text-red-700" />
+        <StatCard label="Completed Today" value={completedToday.length} icon={CheckCircle2} colorClass="bg-emerald-100 text-emerald-700" />
+      </div>
+
       {returnedForCorrection.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-destructive">Returned for Correction</h2>
-          {returnedForCorrection.map((p) => (
-            <Link
-              key={p.id}
-              href={`/dashboard/profile-creator/edit/${p.id}`}
-              className="block rounded-lg border border-destructive/30 bg-destructive/5 p-4 hover:bg-destructive/10"
-            >
-              <p className="font-medium">{p.name} ({p.profileCode})</p>
-              {p.approvalNotes && <p className="text-sm text-muted-foreground">{p.approvalNotes}</p>}
-            </Link>
-          ))}
-        </section>
+        <Card className="border-destructive/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              Returned for Correction
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {returnedForCorrection.map((p) => (
+              <Link
+                key={p.id}
+                href={`/dashboard/profile-creator/edit/${p.id}`}
+                className="block rounded-lg border border-destructive/30 bg-destructive/5 p-4 hover:bg-destructive/10"
+              >
+                <p className="font-medium">
+                  {p.name} <span className="text-muted-foreground">({p.profileCode})</span>
+                </p>
+                {p.approvalNotes && <p className="mt-1 text-sm text-muted-foreground">{p.approvalNotes}</p>}
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
       )}
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold">Pending Queue</h2>
-        {pending.map((q) => (
-          <Link key={q.id} href={`/dashboard/profile-creator/create/${q.id}`} className="block rounded-lg border p-4 hover:bg-muted/50">
-            <p className="font-medium">{q.lead.name}</p>
-            <div className="text-sm text-muted-foreground">{q.lead.phone} · <Badge variant="outline">{q.status}</Badge></div>
-          </Link>
-        ))}
-        {pending.length === 0 && <p className="text-sm text-muted-foreground">No leads waiting.</p>}
-      </section>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4 text-amber-600" />
+              Pending Queue
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {pending.map((q) => (
+              <QueueRow
+                key={q.id}
+                href={`/dashboard/profile-creator/create/${q.id}`}
+                name={q.lead.name}
+                phone={q.lead.phone}
+                status={q.status}
+              />
+            ))}
+            {pending.length === 0 && (
+              <div className="flex flex-col items-center gap-2 py-8 text-center text-muted-foreground">
+                <Inbox className="h-8 w-8 opacity-40" />
+                <p className="text-sm">No leads waiting.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold">In Progress</h2>
-        {inProgress.map((q) => (
-          <Link key={q.id} href={`/dashboard/profile-creator/create/${q.id}`} className="block rounded-lg border p-4 hover:bg-muted/50">
-            <p className="font-medium">{q.lead.name}</p>
-            <div className="text-sm text-muted-foreground">{q.lead.phone} · <Badge variant="outline">{q.status}</Badge></div>
-          </Link>
-        ))}
-        {inProgress.length === 0 && <p className="text-sm text-muted-foreground">Nothing in progress.</p>}
-      </section>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Loader2 className="h-4 w-4 text-blue-600" />
+              In Progress
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {inProgress.map((q) => (
+              <QueueRow
+                key={q.id}
+                href={`/dashboard/profile-creator/create/${q.id}`}
+                name={q.lead.name}
+                phone={q.lead.phone}
+                status={q.status}
+              />
+            ))}
+            {inProgress.length === 0 && (
+              <div className="flex flex-col items-center gap-2 py-8 text-center text-muted-foreground">
+                <Inbox className="h-8 w-8 opacity-40" />
+                <p className="text-sm">Nothing in progress.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold">Completed Today</h2>
-        {completedToday.map((q) => (
-          <div key={q.id} className="rounded-lg border bg-emerald-50 p-4">
-            <p className="font-medium">{q.lead.name}</p>
-            <p className="text-sm text-muted-foreground">{q.lead.phone}</p>
-          </div>
-        ))}
-        {completedToday.length === 0 && <p className="text-sm text-muted-foreground">Nothing completed yet today.</p>}
-      </section>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            Completed Today
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {completedToday.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-8 text-center text-muted-foreground">
+              <Inbox className="h-8 w-8 opacity-40" />
+              <p className="text-sm">Nothing completed yet today.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {completedToday.map((q) => (
+                <div key={q.id} className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                  <p className="font-medium">{q.lead.name}</p>
+                  <p className="text-sm text-muted-foreground">{q.lead.phone}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

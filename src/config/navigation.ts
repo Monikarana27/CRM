@@ -27,6 +27,7 @@ export interface NavItem {
 export const NAV_CONFIG: Record<Role, NavItem[]> = {
   SUPER_ADMIN: [
     { label: "Dashboard", href: "/dashboard/admin", icon: LayoutDashboard },
+    { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
     { label: "Employees", href: "/dashboard/admin/employees", icon: Users },
     { label: "Profiles", href: "/dashboard/admin/profiles", icon: UserSquare2 },
     { label: "Leads", href: "/dashboard/admin/leads", icon: Contact },
@@ -60,7 +61,6 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "Dashboard", href: "/dashboard/sales", icon: LayoutDashboard },
     { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
     { label: "My Leads", href: "/dashboard/admin/leads", icon: Handshake },
-    { label: "My Profiles", href: "/dashboard/admin/profiles", icon: UserSquare2 },
     { label: "Follow-ups", href: "/dashboard/admin/meetings", icon: CalendarClock },
   ],
   PROFILE_CREATOR: [

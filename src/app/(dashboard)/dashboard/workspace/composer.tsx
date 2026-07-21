@@ -16,15 +16,17 @@ export function Composer({
   onPosted,
   placeholder,
   autoFocus,
+  initialAttachment,
 }: {
   parentId?: string;
   onPosted?: () => void;
   placeholder?: string;
   autoFocus?: boolean;
+  initialAttachment?: Attachment;
 }) {
   const [content, setContent] = useState("");
   const [mentionedUsers, setMentionedUsers] = useState<Employee[]>([]);
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>(initialAttachment ? [initialAttachment] : []);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 

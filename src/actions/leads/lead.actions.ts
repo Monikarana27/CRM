@@ -35,6 +35,7 @@ export async function getLeads(filter?: { assignedToId?: string }) {
     orderBy: { createdAt: "desc" },
     include: {
       assignedTo: { select: { id: true, name: true } },
+      profileQueue: { select: { id: true, status: true } },
     },
   });
 }

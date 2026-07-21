@@ -27,8 +27,6 @@ export default async function SalesDashboardPage() {
     : 0;
 
   const funnelTotal = stats.leads.totalLeads;
-  const profileFunnelTotal =
-    stats.profileAssignment.assigned + stats.profileAssignment.reassigned + stats.profileAssignment.unassigned;
 
   const funnelRows = [
     {
@@ -66,30 +64,15 @@ export default async function SalesDashboardPage() {
       colorClass: "border-red-400 bg-red-50",
       barColorClass: "bg-red-500",
     },
-    {
-      label: "Assigned Profiles",
-      value: stats.profileAssignment.assigned,
-      total: profileFunnelTotal,
-      colorClass: "border-violet-400 bg-violet-50",
-      barColorClass: "bg-violet-500",
-    },
-    {
-      label: "Re-assigned Profiles",
-      value: stats.profileAssignment.reassigned,
-      total: profileFunnelTotal,
-      colorClass: "border-purple-400 bg-purple-50",
-      barColorClass: "bg-purple-500",
-    },
   ];
 
   const quickActions = [
-    { label: "Call New Leads", href: "/dashboard/sales/leads?status=NEW", color: "bg-blue-500" },
-    { label: "Contacted Leads", href: "/dashboard/sales/leads?status=CONTACTED", color: "bg-cyan-500" },
-    { label: "View Converted", href: "/dashboard/sales/leads?status=CONVERTED", color: "bg-emerald-500" },
-    { label: "Pending Follow-ups", href: "/dashboard/sales/leads?status=PENDING", color: "bg-amber-500" },
-    { label: "Not Interested", href: "/dashboard/sales/leads?status=NOT_INTERESTED", color: "bg-red-500" },
-  ];
-
+  { label: "Call New Leads", href: "/dashboard/admin/leads?status=NEW", color: "bg-blue-500" },
+  { label: "Contacted Leads", href: "/dashboard/admin/leads?status=CONTACTED", color: "bg-cyan-500" },
+  { label: "View Converted", href: "/dashboard/admin/leads?status=CONVERTED", color: "bg-emerald-500" },
+  { label: "Pending Follow-ups", href: "/dashboard/admin/leads?status=PENDING", color: "bg-amber-500" },
+  { label: "Not Interested", href: "/dashboard/admin/leads?status=NOT_INTERESTED", color: "bg-red-500" },
+];
   return (
     <div className="space-y-6">
       <DashboardHero
@@ -102,7 +85,7 @@ export default async function SalesDashboardPage() {
           title="Total Leads"
           lines={[{ label: "All Leads", value: stats.myLeads }]}
           actionLabel="View Leads"
-          actionHref="/dashboard/sales/leads"
+          actionHref="/dashboard/admin/leads"
         />
         <StatWidget
           title="Converted Leads"

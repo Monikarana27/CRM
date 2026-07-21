@@ -9,7 +9,7 @@ export async function sendToProfileCreationAction(leadId: string) {
 
   const lead = await prisma.lead.findUnique({ where: { id: leadId } });
   if (!lead) return { error: "This lead could not be found." };
-  if (lead.status !== "CONTACTED") {
+ if (lead.status !== "INTERESTED") {
     return { error: "Please mark this lead as Interested before sending it for profile creation." };
   }
 

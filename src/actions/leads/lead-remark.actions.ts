@@ -15,12 +15,12 @@ export async function addLeadRemarkAction(
     data: { leadId, actorId: session.user.id, outcome, remark: remark || null },
   });
 
-  const statusMap: Record<string, "CONTACTED" | "NOT_INTERESTED" | "PENDING"> = {
-    INTERESTED: "CONTACTED",
-    FOLLOW_UP: "PENDING",
-    NOT_INTERESTED: "NOT_INTERESTED",
-    DNP: "PENDING",
-  };
+  const statusMap: Record<string, "CONTACTED" | "NOT_INTERESTED" | "PENDING" | "INTERESTED"> = {
+  INTERESTED: "INTERESTED",
+  FOLLOW_UP: "PENDING",
+  NOT_INTERESTED: "NOT_INTERESTED",
+  DNP: "PENDING",
+};
   await prisma.lead.update({ where: { id: leadId }, data: { status: statusMap[outcome] } });
 
   await prisma.activityLog.create({

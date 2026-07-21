@@ -22,7 +22,7 @@ export default async function ServiceWelcomeCallsPage() {
           </Link>
         </Button>
       </div>
-      <CallLogsTable callLogs={callLogs} />
+      <CallLogsTable callLogs={callLogs} showEmployeeFilter={false} />
     </div>
   );
 }

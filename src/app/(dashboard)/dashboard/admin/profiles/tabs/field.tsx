@@ -1,5 +1,14 @@
+"use client";
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 export function Field({
   name,
@@ -50,6 +59,46 @@ export function TextAreaField({
         rows={4}
         className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       />
+    </div>
+  );
+}
+
+export function SelectField({
+  name,
+  label,
+  defaultValue,
+  options,
+  required = false,
+  placeholder = "Select...",
+}: {
+  name: string;
+  label: string;
+  defaultValue?: string;
+  options: string[];
+  required?: boolean;
+  placeholder?: string;
+}) {
+  const [value, setValue] = useState(defaultValue ?? "");
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={name}>
+        {label}
+        {required && <span className="text-destructive"> *</span>}
+      </Label>
+      <Select value={value} onValueChange={setValue}>
+        <SelectTrigger id={name}>
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((opt) => (
+            <SelectItem key={opt} value={opt}>
+              {opt}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <input type="hidden" name={name} value={value} required={required} />
     </div>
   );
 }
