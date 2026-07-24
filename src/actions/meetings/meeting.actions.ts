@@ -52,7 +52,9 @@ export async function createMeetingAction(
     profileTwoId: formData.get("profileTwoId"),
     type: formData.get("type") || "TELE",
     status: formData.get("status") || "SCHEDULED",
+    outcome: formData.get("outcome") || "PENDING",
     scheduledAt: formData.get("scheduledAt"),
+    reminderAt: formData.get("reminderAt"),
     notes: formData.get("notes"),
     assignedToId: formData.get("assignedToId"),
   });
@@ -61,13 +63,22 @@ export async function createMeetingAction(
     return { error: parsed.error.issues[0].message };
   }
 
+  const scheduledAt = new Date(parsed.data.scheduledAt);
+
+  // Default reminder to 1 day before the meeting if not explicitly set.
+  const reminderAt = parsed.data.reminderAt
+    ? new Date(parsed.data.reminderAt)
+    : new Date(scheduledAt.getTime() - 24 * 60 * 60 * 1000);
+
   const meeting = await prisma.meeting.create({
     data: {
       profileId: parsed.data.profileId,
       profileTwoId: parsed.data.profileTwoId || null,
       type: parsed.data.type,
       status: parsed.data.status,
-      scheduledAt: new Date(parsed.data.scheduledAt),
+      outcome: parsed.data.outcome,
+      scheduledAt,
+      reminderAt,
       notes: parsed.data.notes || null,
       assignedToId: parsed.data.assignedToId || null,
       createdById: session.user.id,
@@ -92,6 +103,55 @@ export async function updateMeetingStatusAction(
   });
 
   await logActivity(session.user.id, `MEETING_STATUS_${status}`, meetingId);
+
+  revalidatePath("/dashboard/admin/meetings");
+}
+
+export async function updateMeetingOutcomeAction(
+  meetingId: string,
+  outcome: "PENDING" | "POSITIVE" | "NEGATIVE" | "ONE_SIDED" | "FOLLOW_UP_NEEDED"
+) {
+  const session = await requireStaff();
+
+  await prisma.meeting.update({
+    where: { id: meetingId },
+    data: { outcome },
+  });
+
+  await logActivity(session.user.id, `MEETING_OUTCOME_${outcome}`, meetingId);
+
+  revalidatePath("/dashboard/admin/meetings");
+}
+
+export async function rescheduleMeetingAction(meetingId: string, scheduledAt: string) {
+  const session = await requireStaff();
+
+  const newDate = new Date(scheduledAt);
+
+  await prisma.meeting.update({
+    where: { id: meetingId },
+    data: {
+      scheduledAt: newDate,
+      status: "SCHEDULED",
+      // push the reminder along with the new date, keeping the same 1-day-before offset
+      reminderAt: new Date(newDate.getTime() - 24 * 60 * 60 * 1000),
+    },
+  });
+
+  await logActivity(session.user.id, "RESCHEDULE_MEETING", meetingId);
+
+  revalidatePath("/dashboard/admin/meetings");
+}
+
+export async function updateMeetingNotesAction(meetingId: string, notes: string) {
+  const session = await requireStaff();
+
+  await prisma.meeting.update({
+    where: { id: meetingId },
+    data: { notes: notes || null },
+  });
+
+  await logActivity(session.user.id, "UPDATE_MEETING_NOTES", meetingId);
 
   revalidatePath("/dashboard/admin/meetings");
 }

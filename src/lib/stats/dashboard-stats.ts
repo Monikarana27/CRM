@@ -146,9 +146,13 @@ export async function getSalesStats(userId: string) {
       prisma.lead.count({
         where: {
           assignedToId: userId,
-          status: "NEW",
-          createdAt: {
-            gte: new Date(new Date().setHours(0, 0, 0, 0)),
+          assignmentHistory: {
+            some: {
+              toEmployeeId: userId,
+              changedAt: {
+                gte: new Date(new Date().setHours(0, 0, 0, 0)),
+              },
+            },
           },
         },
       }),

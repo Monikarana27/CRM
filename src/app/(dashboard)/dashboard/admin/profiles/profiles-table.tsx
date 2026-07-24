@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState, useTransition } from "react";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { BiodataDownloadButton } from "@/components/shared/biodata-download-button";
 import {
   Select,
   SelectTrigger,
@@ -12,27 +13,12 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import Link from "next/link";
-import { Heart } from "lucide-react";
-import { ProfileAssignAction } from "./profile-assign-action";
-import { ProfileRowActions } from "./profile-row-actions";
+import { Heart, Send } from "lucide-react";
+import { UnifiedAssignAction } from "./unified-assign-action";
 import { bulkAssignProfilesAction } from "@/actions/profiles/profile.actions";
-
-type ProfileRow = {
-  id: string;
-  profileCode: string;
-  name: string;
-  gender: string;
-  phone: string;
-  email: string | null;
-  photoUrl: string | null;
-  status: string;
-  religion: string | null;
-  city: string | null;
-  dob: Date | null;
-  approvalStatus: string;
-  createdAt: Date;
-  assignedTo: { id: string; name: string } | null;
-};
+import { bulkAssignLeadsAction } from "@/actions/leads/lead.actions";
+import { sendToProfileCreationAction } from "@/actions/profile-queue/profile-queue.actions";
+import type { UnifiedProfileRow, ProfileStatusLabel } from "@/actions/profiles/profile.actions";
 
 type Employee = { id: string; name: string };
 
@@ -44,10 +30,13 @@ const STATUS_STYLES: Record<string, string> = {
   EXPIRED: "bg-red-100 text-red-700 border-red-200",
 };
 
-const APPROVAL_STYLES: Record<string, string> = {
-  PENDING_APPROVAL: "bg-amber-100 text-amber-700 border-amber-200",
-  APPROVED: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  NEEDS_CHANGES: "bg-red-100 text-red-700 border-red-200",
+const PROGRESS_STYLES: Record<ProfileStatusLabel, string> = {
+  "Lead Only": "bg-gray-100 text-gray-700 border-gray-200",
+  "Awaiting Creation": "bg-amber-100 text-amber-700 border-amber-200",
+  Draft: "bg-blue-100 text-blue-700 border-blue-200",
+  "Pending Approval": "bg-amber-100 text-amber-700 border-amber-200",
+  Approved: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  "Needs Changes": "bg-red-100 text-red-700 border-red-200",
 };
 
 function calculateAge(dob: Date | null): number | null {
@@ -60,12 +49,37 @@ function calculateAge(dob: Date | null): number | null {
   return age;
 }
 
+function SendToCreationButton({ leadId }: { leadId: string }) {
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <div className="flex flex-col gap-1">
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={isPending}
+        onClick={() =>
+          startTransition(async () => {
+            const result = await sendToProfileCreationAction(leadId);
+            setError(result?.error ?? null);
+          })
+        }
+      >
+        <Send className="mr-1.5 h-3.5 w-3.5" />
+        {isPending ? "Sending..." : "Send to Profile Creation"}
+      </Button>
+      {error && <span className="text-xs text-destructive">{error}</span>}
+    </div>
+  );
+}
+
 export function ProfilesTable({
   profiles,
   employees,
   canAssign = true,
 }: {
-  profiles: ProfileRow[];
+  profiles: UnifiedProfileRow[];
   employees: Employee[];
   canAssign?: boolean;
 }) {
@@ -108,13 +122,16 @@ export function ProfilesTable({
     });
   }, [profiles, genderFilter, religionFilter, cityFilter, approvalFilter, assignedFilter, minAge, maxAge, canAssign]);
 
-  const allSelected = filtered.length > 0 && filtered.every((p) => selected.has(p.id));
+  // All row kinds are assignable to a SERVICE employee now — a lead can be
+  // handed to a service agent to help gather info before the profile exists.
+  const selectableRows = filtered;
+  const allSelected = selectableRows.length > 0 && selectableRows.every((p) => selected.has(p.id));
 
   function toggleAll() {
     if (allSelected) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(filtered.map((p) => p.id)));
+      setSelected(new Set(selectableRows.map((p) => p.id)));
     }
   }
 
@@ -130,13 +147,21 @@ export function ProfilesTable({
   function handleBulkAssign() {
     if (selected.size === 0 || !bulkEmployeeId) return;
     startBulkAssign(async () => {
-      await bulkAssignProfilesAction(Array.from(selected), bulkEmployeeId);
+      const selectedRows = filtered.filter((p) => selected.has(p.id));
+      const profileIds = selectedRows.filter((p) => p.kind === "PROFILE" && p.profileId).map((p) => p.profileId!);
+      const leadIds = selectedRows.filter((p) => p.kind !== "PROFILE" && p.leadId).map((p) => p.leadId!);
+
+      await Promise.all([
+        profileIds.length > 0 ? bulkAssignProfilesAction(profileIds, bulkEmployeeId) : Promise.resolve(),
+        leadIds.length > 0 ? bulkAssignLeadsAction(leadIds, bulkEmployeeId) : Promise.resolve(),
+      ]);
+
       setSelected(new Set());
       setBulkEmployeeId("");
     });
   }
 
-  const columns: Column<ProfileRow>[] = [
+  const columns: Column<UnifiedProfileRow>[] = [
     ...(canAssign
       ? [
           {
@@ -149,7 +174,7 @@ export function ProfilesTable({
                 className="h-4 w-4 rounded border-input"
               />
             ),
-            render: (row: ProfileRow) => (
+            render: (row: UnifiedProfileRow) => (
               <input
                 type="checkbox"
                 checked={selected.has(row.id)}
@@ -157,22 +182,28 @@ export function ProfilesTable({
                 className="h-4 w-4 rounded border-input"
               />
             ),
-          } as Column<ProfileRow>,
+            width: 40,
+        } as Column<UnifiedProfileRow>,
         ]
       : []),
     {
       key: "profileCode",
       header: "ID",
       sortable: true,
-      render: (row) => (
-        <Link href={`/dashboard/admin/profiles/${row.id}/edit`} className="font-medium text-primary hover:underline">
-          {row.profileCode}
-        </Link>
-      ),
+      width: 90,
+      render: (row) =>
+        row.profileId ? (
+          <Link href={`/dashboard/admin/profiles/${row.profileId}/edit`} className="font-medium text-primary hover:underline">
+            {row.profileCode}
+          </Link>
+        ) : (
+          <span className="text-sm text-muted-foreground">—</span>
+        ),
     },
     {
       key: "photo",
       header: "Photo",
+      width: 60,
       render: (row) =>
         row.photoUrl ? (
           <img src={row.photoUrl} className="h-9 w-9 rounded-full object-cover" />
@@ -185,14 +216,21 @@ export function ProfilesTable({
     {
       key: "manage",
       header: "Photos",
-      render: (row) => (
-        <Link href={`/dashboard/service/profiles/${row.id}`} className="text-sm text-primary hover:underline">
-          Manage Photos
-        </Link>
-      ),
+      render: (row) =>
+        row.profileId ? (
+          <Link href={`/dashboard/service/profiles/${row.profileId}`} className="text-sm text-primary hover:underline">
+            Manage Photos
+          </Link>
+        ) : (
+          <span className="text-sm text-muted-foreground">—</span>
+        ),
     },
-    { key: "name", header: "Name", sortable: true },
-    { key: "gender", header: "Gender", render: (row) => <span className="text-muted-foreground">{row.gender}</span> },
+    { key: "name", header: "Name", sortable: true, width: 140 },
+    {
+      key: "gender",
+      header: "Gender",
+      render: (row) => <span className="text-muted-foreground">{row.gender || "—"}</span>,
+    },
     {
       key: "age",
       header: "Age",
@@ -203,22 +241,25 @@ export function ProfilesTable({
     { key: "religion", header: "Religion", render: (row) => row.religion || "—" },
     { key: "phone", header: "Phone" },
     {
-      key: "status",
-      header: "Status",
+      key: "progress",
+      header: "Profile Status",
       render: (row) => (
-        <Badge variant="outline" className={STATUS_STYLES[row.status] ?? ""}>
-          {row.status}
+        <Badge variant="outline" className={PROGRESS_STYLES[row.profileStatusLabel]}>
+          {row.profileStatusLabel}
         </Badge>
       ),
     },
     {
-      key: "approvalStatus",
-      header: "Approval",
-      render: (row) => (
-        <Badge variant="outline" className={APPROVAL_STYLES[row.approvalStatus] ?? ""}>
-          {row.approvalStatus.replace("_", " ")}
-        </Badge>
-      ),
+      key: "status",
+      header: "Assignment Status",
+      render: (row) =>
+        row.status ? (
+          <Badge variant="outline" className={STATUS_STYLES[row.status] ?? ""}>
+            {row.status}
+          </Badge>
+        ) : (
+          <span className="text-sm text-muted-foreground">—</span>
+        ),
     },
     {
       key: "createdAt",
@@ -230,29 +271,52 @@ export function ProfilesTable({
     {
       key: "assign",
       header: "Assigned To",
-      render: (row) =>
-        canAssign ? (
-          <ProfileAssignAction profileId={row.id} currentAssignee={row.assignedTo} employees={employees} />
+      render: (row) => {
+        const targetId = row.kind === "PROFILE" ? row.profileId : row.leadId;
+        if (!targetId) {
+          return <span className="text-sm text-muted-foreground">—</span>;
+        }
+        return canAssign ? (
+          <UnifiedAssignAction
+            targetId={targetId}
+            targetType={row.kind === "PROFILE" ? "PROFILE" : "LEAD"}
+            currentAssignee={row.assignedTo}
+            employees={employees}
+          />
         ) : (
           <span className="text-sm text-muted-foreground">{row.assignedTo?.name ?? "—"}</span>
-        ),
-    },
-    {
-      key: "matches",
-      header: "Matches",
-      render: (row) => (
-        <Button variant="outline" size="sm" asChild>
-          <Link href={`/dashboard/service/matching/${row.id}`}>
-            <Heart className="mr-1.5 h-3.5 w-3.5" />
-            Find Matches
-          </Link>
-        </Button>
-      ),
+        );
+      },
     },
     {
       key: "actions",
       header: "Actions",
-      render: (row) => <ProfileRowActions profile={row} />,
+      render: (row) => {
+        if (row.kind === "LEAD" && row.leadId) {
+          return <SendToCreationButton leadId={row.leadId} />;
+        }
+        if (row.kind === "QUEUE" && row.queueId) {
+          return (
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/dashboard/profile-creator/create/${row.queueId}`}>Continue</Link>
+            </Button>
+          );
+        }
+        if (row.kind === "PROFILE" && row.profileId) {
+          return (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/dashboard/service/matching/${row.profileId}`}>
+                  <Heart className="mr-1.5 h-3.5 w-3.5" />
+                  Find Matches
+                </Link>
+              </Button>
+              <BiodataDownloadButton profileId={row.profileId} />
+            </div>
+          );
+        }
+        return null;
+      },
     },
   ];
 
@@ -372,7 +436,13 @@ export function ProfilesTable({
         columns={columns}
         searchPlaceholder="Search by name, ID, or phone..."
         emptyMessage="No profiles found in this view."
+        frozenColumnCount={4}
       />
     </div>
   );
 }
+
+
+
+
+

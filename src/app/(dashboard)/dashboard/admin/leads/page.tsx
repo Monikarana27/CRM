@@ -15,7 +15,7 @@ export default async function LeadsPage() {
   const leads = await getLeads();
   const employees = canAssign
     ? await prisma.user.findMany({
-        where: { active: true },
+        where: { active: true, role: "SALES" },
         select: { id: true, name: true },
         orderBy: { name: "asc" },
       })

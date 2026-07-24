@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth/auth";
+﻿import { auth } from "@/lib/auth/auth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -12,6 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { logoutAction } from "@/actions/auth/login.action";
 import { LogOut, User } from "lucide-react";
 import { NotificationBell } from "@/components/layout/notification-bell";
+import { CommandPalette } from "@/components/layout/command-palette";
+import type { Role } from "@/lib/permissions/roles";
+
 
 const ROLE_STYLES: Record<string, string> = {
   ADMIN: "bg-violet-100 text-violet-700 border-violet-200",
@@ -19,10 +22,10 @@ const ROLE_STYLES: Record<string, string> = {
   SERVICE: "bg-emerald-100 text-emerald-700 border-emerald-200",
 };
 
-export async function Header() {
+export async function Header({ role }: { role: Role }) {
   const session = await auth();
   const name = session?.user?.name ?? "User";
-  const role = session?.user?.role ?? "USER";
+  const userRole = session?.user?.role ?? "USER";
   const initials = name
     .split(" ")
     .map((n) => n[0])
@@ -31,13 +34,17 @@ export async function Header() {
     .toUpperCase();
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-background/80 backdrop-blur px-6">
+    <header className="flex h-16 items-center justify-between border-b border-border/60 bg-background/80 backdrop-blur px-6">
       <div className="flex items-center gap-2">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">
           S
         </div>
         <span className="font-semibold tracking-tight">Sangam CRM</span>
       </div>
+
+      <CommandPalette role={role} />
+
+      
 
       <div className="flex items-center gap-3">
       <NotificationBell />
@@ -82,3 +89,5 @@ export async function Header() {
     </header>
   );
 }
+
+

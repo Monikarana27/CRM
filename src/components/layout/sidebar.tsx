@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -20,13 +20,13 @@ export function Sidebar({ role }: { role: Role }) {
   const items = NAV_CONFIG[role];
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r bg-background md:flex">
+    <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex">
       <div className="px-4 pb-2 pt-6">
-        <p className="px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <p className="px-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
           {ROLE_LABEL[role]}
         </p>
       </div>
-      <nav className="flex flex-col gap-1 px-3">
+      <nav className="flex flex-col gap-0.5 px-3">
         {items.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
@@ -35,18 +35,21 @@ export function Sidebar({ role }: { role: Role }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+                "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
                 isActive
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
               )}
             >
+              {isActive && (
+                <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-sidebar-primary" />
+              )}
               <Icon
                 className={cn(
                   "h-4 w-4 shrink-0 transition-colors",
                   isActive
-                    ? "text-primary-foreground"
-                    : "text-muted-foreground group-hover:text-foreground"
+                    ? "text-sidebar-primary"
+                    : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground"
                 )}
               />
               {item.label}
@@ -55,11 +58,11 @@ export function Sidebar({ role }: { role: Role }) {
         })}
       </nav>
       <div className="mt-auto p-4">
-        <div className="rounded-lg border bg-muted/40 p-3">
-          <p className="text-xs font-medium text-muted-foreground">
-            Phase 1 — Foundation
+        <div className="rounded-lg border border-sidebar-border bg-sidebar-accent/40 p-3">
+          <p className="text-xs font-medium text-sidebar-foreground/70">
+            Phase 1 - Foundation
           </p>
-          <p className="mt-0.5 text-xs text-muted-foreground/70">
+          <p className="mt-0.5 text-xs text-sidebar-foreground/40">
             Core CRM modules launching soon
           </p>
         </div>

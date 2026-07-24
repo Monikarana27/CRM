@@ -44,6 +44,160 @@ export async function getProfiles(filter?: {
   });
 }
 
+export type ProfileStatusLabel =
+  | "Lead Only"
+  | "Awaiting Creation"
+  | "Draft"
+  | "Pending Approval"
+  | "Approved"
+  | "Needs Changes";
+
+export type UnifiedProfileRow = {
+  id: string; // profileId if it exists, else leadId â€” used as the table row key
+  kind: "LEAD" | "QUEUE" | "PROFILE";
+  profileId: string | null;
+  leadId: string | null;
+  queueId: string | null;
+  profileCode: string | null;
+  name: string;
+  gender: string | null;
+  phone: string;
+  email: string | null;
+  photoUrl: string | null;
+  city: string | null;
+  religion: string | null;
+  dob: Date | null;
+  status: string | null; // ProfileStatus â€” only meaningful once a Profile exists
+  approvalStatus: string | null;
+  profileStatusLabel: ProfileStatusLabel;
+  createdAt: Date;
+  assignedTo: { id: string; name: string } | null;
+};
+
+export async function getUnifiedProfiles(filter?: {
+  status?: "UNASSIGNED" | "ASSIGNED" | "REASSIGNED" | "ON_HOLD" | "EXPIRED";
+  assignedToId?: string;
+  source?: string;
+  approvalStatus?: "PENDING_APPROVAL" | "APPROVED" | "NEEDS_CHANGES";
+}) {
+  const session = await requireStaff();
+  const isScopedRole = ["SALES", "SERVICE"].includes(session.user.role);
+
+  // Existing completed/in-progress-via-approval profiles â€” unchanged behavior.
+  const profiles = await prisma.profile.findMany({
+    where: {
+      ...(isScopedRole ? { assignedToId: session.user.id } : {}),
+      ...(!isScopedRole && filter?.status ? { status: filter.status } : {}),
+      ...(!isScopedRole && filter?.assignedToId ? { assignedToId: filter.assignedToId } : {}),
+      ...(filter?.source ? { source: filter.source } : {}),
+      ...(filter?.approvalStatus ? { approvalStatus: filter.approvalStatus } : {}),
+    },
+    orderBy: { createdAt: "desc" },
+    include: {
+      assignedTo: { select: { id: true, name: true } },
+    },
+  });
+
+  const profileRows: UnifiedProfileRow[] = profiles.map((p) => ({
+    id: p.id,
+    kind: "PROFILE",
+    profileId: p.id,
+    leadId: null,
+    queueId: null,
+    profileCode: p.profileCode,
+    name: p.name,
+    gender: p.gender,
+    phone: p.phone,
+    email: p.email,
+    photoUrl: p.photoUrl,
+    city: p.city,
+    religion: p.religion,
+    dob: p.dob,
+    status: p.status,
+    approvalStatus: p.approvalStatus,
+    profileStatusLabel:
+      p.approvalStatus === "APPROVED"
+        ? "Approved"
+        : p.approvalStatus === "NEEDS_CHANGES"
+          ? "Needs Changes"
+          : "Pending Approval",
+    createdAt: p.createdAt,
+    assignedTo: p.assignedTo,
+  }));
+
+  // Skip the two "in flight" categories entirely when a specific ProfileStatus
+  // tab/filter is active â€” those don't apply until a Profile actually exists.
+  if (filter?.status || filter?.source || filter?.approvalStatus) {
+    return profileRows;
+  }
+
+  // Leads sent to the queue but not yet started or not yet finished.
+  const inFlightQueue = await prisma.profileQueue.findMany({
+    where: { status: { in: ["PENDING", "IN_PROGRESS"] } },
+    orderBy: { sentToQueueAt: "desc" },
+    include: { lead: { include: { assignedTo: { select: { id: true, name: true } } } } },
+  });
+
+  const queueRows: UnifiedProfileRow[] = inFlightQueue.map((q) => ({
+    id: q.leadId,
+    kind: "QUEUE",
+    profileId: null,
+    leadId: q.leadId,
+    queueId: q.id,
+    profileCode: null,
+    name: q.lead.name,
+    gender: q.lead.gender,
+    phone: q.lead.phone,
+    email: q.lead.email,
+    photoUrl: null,
+    city: null,
+    religion: null,
+    dob: null,
+    status: null,
+    approvalStatus: null,
+    profileStatusLabel: q.status === "PENDING" ? "Awaiting Creation" : "Draft",
+    createdAt: q.sentToQueueAt,
+    assignedTo: q.lead.assignedTo,
+  }));
+
+  // Leads marked Interested by sales but not yet sent to profile creation at all.
+  const looseLeads = await prisma.lead.findMany({
+    where: {
+      status: "INTERESTED",
+      profileQueue: null,
+      convertedProfileId: null,
+    },
+    orderBy: { createdAt: "desc" },
+    include: { assignedTo: { select: { id: true, name: true } } },
+  });
+
+  const leadRows: UnifiedProfileRow[] = looseLeads.map((l) => ({
+    id: l.id,
+    kind: "LEAD",
+    profileId: null,
+    leadId: l.id,
+    queueId: null,
+    profileCode: null,
+    name: l.name,
+    gender: l.gender,
+    phone: l.phone,
+    email: l.email,
+    photoUrl: null,
+    city: null,
+    religion: null,
+    dob: null,
+    status: null,
+    approvalStatus: null,
+    profileStatusLabel: "Lead Only",
+    createdAt: l.createdAt,
+    assignedTo: l.assignedTo,
+  }));
+
+  return [...leadRows, ...queueRows, ...profileRows].sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+  );
+}
+
 export async function getProfileById(id: string) {
   await requireStaff();
   return prisma.profile.findUnique({
@@ -51,8 +205,6 @@ export async function getProfileById(id: string) {
     include: { partnerPreference: true },
   });
 }
-
-
 
 export async function createProfileAction(
   _prevState: unknown,
@@ -227,3 +379,6 @@ export async function getProfileHistory(profileId: string) {
     include: { actor: { select: { name: true } } },
   });
 }
+
+
+

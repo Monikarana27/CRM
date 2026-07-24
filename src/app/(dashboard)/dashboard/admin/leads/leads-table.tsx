@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
-
+import { History } from "lucide-react";
+import { LeadAssignmentHistoryDialog } from "./lead-assignment-history-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -57,6 +58,7 @@ const STATUS_STYLES: Record<string, string> = {
 function LeadRowActions({ lead }: { lead: LeadRow }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   function handleSendToProfile() {
     startTransition(async () => {
@@ -91,6 +93,10 @@ function LeadRowActions({ lead }: { lead: LeadRow }) {
               Edit
             </Link>
           </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setHistoryOpen(true)}>
+            <History className="mr-2 h-3.5 w-3.5" />
+            View Assignment History
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={handleSendToProfile} disabled={isPending}>
             <ArrowRightCircle className="mr-2 h-3.5 w-3.5" />
             {isPending ? "Sending..." : "Send to Profile Creation"}
@@ -98,6 +104,12 @@ function LeadRowActions({ lead }: { lead: LeadRow }) {
         </DropdownMenuContent>
       </DropdownMenu>
       {error && <span className="text-xs text-destructive">{error}</span>}
+      <LeadAssignmentHistoryDialog
+        leadId={lead.id}
+        leadName={lead.name}
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+      />
     </div>
   );
 }

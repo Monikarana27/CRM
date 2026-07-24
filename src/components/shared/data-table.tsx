@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, ArrowUpDown, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface Column<T> {
   key: string;
@@ -19,6 +20,7 @@ export interface Column<T> {
   render?: (row: T) => React.ReactNode;
   sortable?: boolean;
   accessor?: (row: T) => string | number;
+  width?: number; // px width, needed for sticky offset math
 }
 
 interface DataTableProps<T> {
@@ -27,6 +29,10 @@ interface DataTableProps<T> {
   searchPlaceholder?: string;
   pageSize?: number;
   emptyMessage?: string;
+  /** Number of leading columns to freeze (pinned while scrolling horizontally) */
+  frozenColumnCount?: number;
+  /** Row click opens detail drawer, etc. Ignored if the click originated in an Actions cell (data-no-row-click). */
+  onRowClick?: (row: T) => void;
 }
 
 export function DataTable<T extends { id: string }>({
@@ -35,6 +41,8 @@ export function DataTable<T extends { id: string }>({
   searchPlaceholder = "Search...",
   pageSize = 10,
   emptyMessage = "No records found.",
+  frozenColumnCount = 0,
+  onRowClick,
 }: DataTableProps<T>) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<string | null>(null);
@@ -78,6 +86,34 @@ export function DataTable<T extends { id: string }>({
     setPage(1);
   }
 
+  // Cumulative left offsets for frozen columns. Falls back to a sane
+  // default width if a frozen column doesn't declare one.
+  const DEFAULT_COL_WIDTH = 160;
+  const leftOffsets = useMemo(() => {
+    const offsets: number[] = [];
+    let running = 0;
+    for (let i = 0; i < columns.length; i++) {
+      offsets[i] = running;
+      if (i < frozenColumnCount) {
+        running += columns[i].width ?? DEFAULT_COL_WIDTH;
+      }
+    }
+    return offsets;
+  }, [columns, frozenColumnCount]);
+
+  function stickyStyle(index: number): React.CSSProperties | undefined {
+    if (index >= frozenColumnCount) return undefined;
+    const isLastFrozen = index === frozenColumnCount - 1;
+    return {
+      position: "sticky",
+      left: leftOffsets[index],
+      zIndex: 20 - index, // earlier columns stack above later ones
+      width: columns[index].width ?? DEFAULT_COL_WIDTH,
+      minWidth: columns[index].width ?? DEFAULT_COL_WIDTH,
+      boxShadow: isLastFrozen ? "2px 0 4px -2px rgba(0,0,0,0.15)" : undefined,
+    };
+  }
+
   return (
     <div className="space-y-4">
       <div className="relative w-full max-w-sm">
@@ -93,49 +129,71 @@ export function DataTable<T extends { id: string }>({
         />
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {columns.map((col) => (
-              <TableHead key={col.key}>
-                {col.sortable ? (
-                  <button
-                    onClick={() => toggleSort(col.key)}
-                    className="flex items-center gap-1 hover:text-foreground"
-                  >
-                    {col.header}
-                    <ArrowUpDown className="h-3 w-3" />
-                  </button>
-                ) : (
-                  col.header
-                )}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {paginated.length === 0 ? (
+      {/* overflow-x-auto is required for sticky-left to have something to scroll within */}
+      <div className="w-full overflow-x-auto rounded-md border">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell
-                colSpan={columns.length}
-                className="h-24 text-center text-muted-foreground"
-              >
-                {emptyMessage}
-              </TableCell>
+              {columns.map((col, i) => (
+                <TableHead
+                  key={col.key}
+                  className={cn(i < frozenColumnCount && "bg-background")}
+                  style={stickyStyle(i)}
+                >
+                  {col.sortable ? (
+                    <button
+                      onClick={() => toggleSort(col.key)}
+                      className="flex items-center gap-1 hover:text-foreground"
+                    >
+                      {col.header}
+                      <ArrowUpDown className="h-3 w-3" />
+                    </button>
+                  ) : (
+                    col.header
+                  )}
+                </TableHead>
+              ))}
             </TableRow>
-          ) : (
-            paginated.map((row) => (
-              <TableRow key={row.id}>
-                {columns.map((col) => (
-                  <TableCell key={col.key}>
-                    {col.render ? col.render(row) : (row as any)[col.key]}
-                  </TableCell>
-                ))}
+          </TableHeader>
+          <TableBody>
+            {paginated.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  {emptyMessage}
+                </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              paginated.map((row) => (
+                <TableRow
+                  key={row.id}
+                  className={cn(onRowClick && "cursor-pointer hover:bg-muted/50")}
+                  onClick={(e) => {
+                    if (!onRowClick) return;
+                    // don't trigger the drawer when the click came from an
+                    // Actions cell (buttons, dropdowns, etc.)
+                    const target = e.target as HTMLElement;
+                    if (target.closest("[data-no-row-click]")) return;
+                    onRowClick(row);
+                  }}
+                >
+                  {columns.map((col, i) => (
+                    <TableCell
+                      key={col.key}
+                      className={cn(i < frozenColumnCount && "bg-background")}
+                      style={stickyStyle(i)}
+                    >
+                      {col.render ? col.render(row) : (row as any)[col.key]}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>

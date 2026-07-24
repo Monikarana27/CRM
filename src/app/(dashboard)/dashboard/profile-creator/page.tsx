@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, Loader2, AlertTriangle, CheckCircle2, ChevronRight, Inbox } from "lucide-react";
+import { BiodataDownloadButton } from "@/components/shared/biodata-download-button";
 
 const STATUS_STYLES: Record<string, string> = {
   PENDING: "bg-amber-100 text-amber-700 border-amber-200",
@@ -178,11 +179,20 @@ export default async function ProfileCreatorDashboard() {
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {completedToday.map((q) => (
-                <div key={q.id} className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                  <p className="font-medium">{q.lead.name}</p>
-                  <p className="text-sm text-muted-foreground">{q.lead.phone}</p>
-                </div>
-              ))}
+  <div
+    key={q.id}
+    className="rounded-lg border border-emerald-200 bg-emerald-50 p-4"
+  >
+    <p className="font-medium">{q.lead.name}</p>
+    <p className="text-sm text-muted-foreground">{q.lead.phone}</p>
+
+    {q.createdProfileId && (
+      <div className="mt-2">
+        <BiodataDownloadButton profileId={q.createdProfileId} />
+      </div>
+    )}
+  </div>
+))}
             </div>
           )}
         </CardContent>

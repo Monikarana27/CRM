@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth/auth";
+﻿import { auth } from "@/lib/auth/auth";
 import { StatWidget } from "@/components/widgets/stat-widget";
 import { FunnelBreakdown } from "@/components/widgets/funnel-breakdown";
 import { ConversionRateCard } from "@/components/widgets/conversion-rate-card";
@@ -112,33 +112,33 @@ export default async function AdminDashboardPage() {
           title="Profiles"
           badge={{
             text: `${stats.profiles.totalProfiles} Total`,
-            className: "bg-amber-100 text-amber-700 border-amber-200",
+            className: "bg-muted text-muted-foreground border-border",
           }}
           lines={[
             { label: "Total", value: stats.profiles.totalProfiles },
             { label: "Male", value: stats.profiles.maleProfiles },
             { label: "Female", value: stats.profiles.femaleProfiles },
           ]}
-          progress={{ value: 100, colorClass: "bg-amber-500" }}
+          progress={{ value: 100, colorClass: "bg-primary" }}
           actionLabel="View Profiles"
           actionHref="/dashboard/admin/profiles"
         />
 
         <StatWidget
           title="Ongoing Services"
-          badge={{ text: "Live Data", className: "bg-emerald-100 text-emerald-700 border-emerald-200" }}
+          badge={{ text: "Live Data", className: "bg-muted text-muted-foreground border-border" }}
           lines={[
             { label: "Active", value: stats.services.activeServices },
             { label: "On Hold", value: stats.services.holdServices },
             { label: "Expired", value: stats.services.expiredServices },
           ]}
-          progress={{ value: servicesProgress, colorClass: "bg-emerald-500" }}
+          progress={{ value: servicesProgress, colorClass: "bg-primary" }}
           actionLabel="View Subscriptions"
           actionHref="/dashboard/admin/subscriptions"
         />
         <StatWidget
           title="Today's Summary"
-          badge={{ text: "Live", className: "bg-blue-100 text-blue-700 border-blue-200" }}
+          badge={{ text: "Live", className: "bg-muted text-muted-foreground border-border" }}
           lines={[
             { label: "New Leads", value: stats.todaysSummary.newLeadsToday },
             { label: "Profiles Created", value: stats.todaysSummary.profilesCreatedToday },
@@ -146,7 +146,7 @@ export default async function AdminDashboardPage() {
             { label: "Pending Approvals", value: stats.todaysSummary.pendingApprovals },
             { label: "Active Services", value: stats.todaysSummary.activeServices },
           ]}
-          progress={{ value: 100, colorClass: "bg-blue-500" }}
+          progress={{ value: 100, colorClass: "bg-primary" }}
           actionLabel="View Approvals"
           actionHref="/dashboard/admin/profiles?filter=pending-approval"
         />
@@ -155,14 +155,14 @@ export default async function AdminDashboardPage() {
           title="Payments"
           badge={{
             text: `₹${stats.payments.totalCollected.toLocaleString("en-IN")}`,
-            className: "bg-red-100 text-red-700 border-red-200",
+            className: "bg-muted text-muted-foreground border-border",
           }}
           lines={[
             { label: "Paid", value: stats.payments.paidPayments },
             { label: "Pending", value: stats.payments.pendingPayments },
             { label: "Failed", value: stats.payments.failedPayments },
           ]}
-          progress={{ value: paymentsProgress, colorClass: "bg-red-500" }}
+          progress={{ value: paymentsProgress, colorClass: "bg-primary" }}
           actionLabel="View Payments"
           actionHref="/dashboard/admin/payments"
         />
@@ -171,13 +171,13 @@ export default async function AdminDashboardPage() {
           title="Employees"
           badge={{
             text: `${stats.employees.totalEmployees} Total`,
-            className: "bg-violet-100 text-violet-700 border-violet-200",
+            className: "bg-muted text-muted-foreground border-border",
           }}
           lines={[
             { label: "Active", value: stats.employees.activeEmployees },
             { label: "Total", value: stats.employees.totalEmployees },
           ]}
-          progress={{ value: employeesProgress, colorClass: "bg-violet-500" }}
+          progress={{ value: employeesProgress, colorClass: "bg-primary" }}
           actionLabel="Manage Staff"
           actionHref="/dashboard/admin/employees"
         />
@@ -205,4 +205,10 @@ export default async function AdminDashboardPage() {
     </div>
   );
 }
+
+
+
+
+
+
 

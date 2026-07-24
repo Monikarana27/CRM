@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getProfiles } from "@/actions/profiles/profile.actions";
+import { getUnifiedProfiles } from "@/actions/profiles/profile.actions";
 import { prisma } from "@/lib/db/prisma";
 import { DashboardHero } from "@/components/layout/dashboard-hero";
 import { Button } from "@/components/ui/button";
@@ -17,10 +17,10 @@ export default async function ProfilesPage({
     ? (status as "UNASSIGNED" | "ASSIGNED" | "REASSIGNED" | "ON_HOLD" | "EXPIRED")
     : undefined;
   const profiles = status === "WEBSITE"
-    ? await getProfiles({ source: "Website" })
-    : await getProfiles(validStatus ? { status: validStatus } : undefined);
+    ? await getUnifiedProfiles({ source: "Website" })
+    : await getUnifiedProfiles(validStatus ? { status: validStatus } : undefined);
   const employees = await prisma.user.findMany({
-    where: { active: true },
+    where: { active: true, role: "SERVICE" },
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });

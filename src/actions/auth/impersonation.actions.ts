@@ -22,15 +22,17 @@ export async function startImpersonationAction(targetUserId: string) {
   const currentToken = await getCurrentToken();
   if (!currentToken) throw new Error("No active session");
 
-  await setSessionToken({
-    ...currentToken,
-    sub: target.id,
-    role: target.role,
-    active: target.active,
-    impersonating: true,
-    originalUserId: session.user.id,
-    originalUserName: session.user.name,
-  });
+ await setSessionToken({
+  ...currentToken,
+  sub: target.id,
+  name: target.name,
+  email: target.email,
+  role: target.role,
+  active: target.active,
+  impersonating: true,
+  originalUserId: session.user.id,
+  originalUserName: session.user.name,
+});
 
   await prisma.activityLog.create({
     data: {
@@ -64,14 +66,16 @@ export async function endImpersonationAction() {
   if (!currentToken) throw new Error("No active session");
 
   await setSessionToken({
-    ...currentToken,
-    sub: admin.id,
-    role: admin.role,
-    active: admin.active,
-    impersonating: undefined,
-    originalUserId: undefined,
-    originalUserName: undefined,
-  });
+  ...currentToken,
+  sub: admin.id,
+  name: admin.name,
+  email: admin.email,
+  role: admin.role,
+  active: admin.active,
+  impersonating: undefined,
+  originalUserId: undefined,
+  originalUserName: undefined,
+});
 
   await prisma.activityLog.create({
     data: {

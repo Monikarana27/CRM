@@ -10,9 +10,10 @@ export async function addProfileDocumentAction(profileId: string, url: string, t
     return { error: "You do not have permission to upload photos for this profile." };
   }
 
+  let existingPhotoCount = 0;
   if (type === "PHOTO") {
-    const count = await prisma.profileDocument.count({ where: { profileId, type: "PHOTO" } });
-    if (count >= 5) {
+    existingPhotoCount = await prisma.profileDocument.count({ where: { profileId, type: "PHOTO" } });
+    if (existingPhotoCount >= 5) {
       return { error: "Maximum 5 photos allowed per profile." };
     }
   }
@@ -25,7 +26,15 @@ export async function addProfileDocumentAction(profileId: string, url: string, t
   await prisma.profileDocument.create({
     data: { profileId, url, type, order: (maxOrder._max.order ?? -1) + 1 },
   });
+
+  if (type === "PHOTO" && existingPhotoCount === 0) {
+    await prisma.profile.update({ where: { id: profileId }, data: { photoUrl: url } });
+  }
+
   revalidatePath(`/dashboard/admin/profiles/${profileId}/edit`);
+  revalidatePath(`/dashboard/service/profiles/${profileId}`);
+  revalidatePath(`/dashboard/service/profiles`);
+  revalidatePath(`/dashboard/admin/profiles`);
   return { error: null };
 }
 

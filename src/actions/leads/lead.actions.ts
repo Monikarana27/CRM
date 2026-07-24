@@ -141,9 +141,23 @@ export async function updateLeadAction(
 export async function assignLeadAction(leadId: string, employeeId: string) {
   const session = await requireStaff();
 
+  const previous = await prisma.lead.findUnique({
+    where: { id: leadId },
+    select: { assignedToId: true },
+  });
+
   await prisma.lead.update({
     where: { id: leadId },
     data: { assignedToId: employeeId },
+  });
+
+  await prisma.leadAssignmentHistory.create({
+    data: {
+      leadId,
+      fromEmployeeId: previous?.assignedToId ?? null,
+      toEmployeeId: employeeId,
+      changedById: session.user.id,
+    },
   });
 
   await logActivity(session.user.id, "ASSIGN_LEAD", leadId);
@@ -154,9 +168,23 @@ export async function assignLeadAction(leadId: string, employeeId: string) {
 export async function unassignLeadAction(leadId: string) {
   const session = await requireStaff();
 
+  const previous = await prisma.lead.findUnique({
+    where: { id: leadId },
+    select: { assignedToId: true },
+  });
+
   await prisma.lead.update({
     where: { id: leadId },
     data: { assignedToId: null },
+  });
+
+  await prisma.leadAssignmentHistory.create({
+    data: {
+      leadId,
+      fromEmployeeId: previous?.assignedToId ?? null,
+      toEmployeeId: null,
+      changedById: session.user.id,
+    },
   });
 
   await logActivity(session.user.id, "UNASSIGN_LEAD", leadId);
@@ -167,9 +195,23 @@ export async function unassignLeadAction(leadId: string) {
 export async function bulkAssignLeadsAction(leadIds: string[], employeeId: string) {
   const session = await requireStaff();
 
+  const leadsBefore = await prisma.lead.findMany({
+    where: { id: { in: leadIds } },
+    select: { id: true, assignedToId: true },
+  });
+
   await prisma.lead.updateMany({
     where: { id: { in: leadIds } },
     data: { assignedToId: employeeId },
+  });
+
+  await prisma.leadAssignmentHistory.createMany({
+    data: leadsBefore.map((lead) => ({
+      leadId: lead.id,
+      fromEmployeeId: lead.assignedToId,
+      toEmployeeId: employeeId,
+      changedById: session.user.id,
+    })),
   });
 
   for (const leadId of leadIds) {
@@ -178,7 +220,6 @@ export async function bulkAssignLeadsAction(leadIds: string[], employeeId: strin
 
   revalidatePath("/dashboard/admin/leads");
 }
-
 export async function convertLeadToProfileAction(leadId: string) {
   const session = await requireStaff();
 
@@ -228,4 +269,17 @@ export async function convertLeadToProfileAction(leadId: string) {
 
   revalidatePath("/dashboard/admin/leads");
   redirect(`/dashboard/admin/profiles/${profile.id}/edit`);
+}
+
+export async function getLeadAssignmentHistory(leadId: string) {
+  await requireStaff();
+  return prisma.leadAssignmentHistory.findMany({
+    where: { leadId },
+    orderBy: { changedAt: "desc" },
+    include: {
+      fromEmployee: { select: { id: true, name: true } },
+      toEmployee: { select: { id: true, name: true } },
+      changedBy: { select: { id: true, name: true } },
+    },
+  });
 }

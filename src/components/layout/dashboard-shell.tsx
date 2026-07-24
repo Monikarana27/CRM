@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth/auth";
+﻿import { auth } from "@/lib/auth/auth";
 import { Header } from "@/components/layout/header";
 import { Sidebar } from "@/components/layout/sidebar";
 import { ImpersonationBanner } from "@/components/layout/impersonation-banner";
@@ -20,11 +20,12 @@ export async function DashboardShell({
       )}
       <div className="flex flex-1">
         <Sidebar role={role} />
-        <div className="flex flex-1 flex-col">
-          <Header />
+        <div className="flex flex-1 flex-col min-w-0">
+          <Header role={role} />
           <main className="flex-1 bg-muted/30 p-6">{children}</main>
         </div>
       </div>
     </div>
   );
 }
+
