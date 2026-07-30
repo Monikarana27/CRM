@@ -36,8 +36,64 @@ export async function getLeads(filter?: { assignedToId?: string }) {
     include: {
       assignedTo: { select: { id: true, name: true } },
       profileQueue: { select: { id: true, status: true } },
+      remarks: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { remark: true, outcome: true, createdAt: true },
+      },
     },
   });
+}
+
+export async function getFollowUpLeads() {
+  const session = await requireStaff();
+  const scopedFilter = session.user.role === "SALES" ? { assignedToId: session.user.id } : {};
+
+  return prisma.lead.findMany({
+    where: { ...scopedFilter, followUpDate: { not: null } },
+    orderBy: { followUpDate: "asc" },
+    include: {
+      assignedTo: { select: { id: true, name: true } },
+      remarks: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { remark: true, outcome: true },
+      },
+    },
+  });
+}
+
+export async function ensureFollowUpNotifications() {
+  const session = await requireStaff();
+  if (session.user.role !== "SALES") return;
+
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const dueLeads = await prisma.lead.findMany({
+    where: {
+      assignedToId: session.user.id,
+      followUpDate: { lte: new Date() },
+    },
+    select: { id: true, name: true },
+  });
+
+  for (const lead of dueLeads) {
+    const content = `Follow-up due: ${lead.name}`;
+    const existing = await prisma.notification.findFirst({
+      where: {
+        recipientId: session.user.id,
+        type: "LEAD_FOLLOWUP",
+        content,
+        createdAt: { gte: startOfDay },
+      },
+    });
+    if (!existing) {
+      await prisma.notification.create({
+        data: { recipientId: session.user.id, type: "LEAD_FOLLOWUP", content },
+      });
+    }
+  }
 }
 
 export async function getLeadById(id: string) {
@@ -239,33 +295,47 @@ export async function convertLeadToProfileAction(leadId: string) {
 
   const profileCode = await generateProfileCode(lead.gender ?? "OTHER");
 
-  const profile = await prisma.profile.create({
-    data: {
-      profileCode,
-      name: lead.name,
-      phone: lead.phone,
-      email: lead.email,
-      source: lead.source,
-      gender: lead.gender ?? "OTHER",
-      status: "UNASSIGNED",
-      createdById: session.user.id,
-      partnerPreference: { create: {} },
-    },
-  });
+  const profile = await prisma.$transaction(async (tx) => {
+    const createdProfile = await tx.profile.create({
+      data: {
+        profileCode,
+        name: lead.name,
+        phone: lead.phone,
+        email: lead.email,
+        source: lead.source,
+        gender: lead.gender ?? "OTHER",
+        status: "UNASSIGNED",
+        createdById: session.user.id,
+        partnerPreference: { create: {} },
+      },
+    });
 
-  await prisma.lead.update({
-    where: { id: leadId },
-    data: {
-      status: "CONVERTED",
-      convertedProfileId: profile.id,
-    },
-  });
+    const updatedLead = await tx.lead.updateMany({
+      where: {
+        id: leadId,
+        convertedProfileId: null,
+      },
+      data: {
+        status: "CONVERTED",
+        convertedProfileId: createdProfile.id,
+      },
+    });
 
-  await logActivity(
-    session.user.id,
-    "CONVERT_LEAD_TO_PROFILE",
-    leadId
-  );
+    if (updatedLead.count === 0) {
+      throw new Error("Lead has already been converted by another request.");
+    }
+
+    await tx.activityLog.create({
+      data: {
+        actorId: session.user.id,
+        action: "CONVERT_LEAD_TO_PROFILE",
+        entityType: "Lead",
+        entityId: leadId,
+      },
+    });
+
+    return createdProfile;
+  });
 
   revalidatePath("/dashboard/admin/leads");
   redirect(`/dashboard/admin/profiles/${profile.id}/edit`);
