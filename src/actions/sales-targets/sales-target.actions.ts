@@ -76,8 +76,9 @@ export async function getSalesTargetsForMonth(month: number, year: number) {
   return results;
 }
 
-export async function getMyTarget(userId: string, month: number, year: number) {
-  await requireStaff();
+export async function getMyTarget(month: number, year: number) {
+  const session = await requireStaff();
+  const userId = session.user.id;
 
   const target = await prisma.salesTarget.findUnique({
     where: { userId_month_year: { userId, month, year } },

@@ -6,15 +6,18 @@ import { DashboardHero } from "@/components/layout/dashboard-hero";
 import { getSalesStats } from "@/lib/stats/dashboard-stats";
 import { getMyTarget } from "@/actions/sales-targets/sales-target.actions";
 import { Card, CardContent } from "@/components/ui/card";
+import { ensureFollowUpNotifications } from "@/actions/leads/lead.actions";
+import { Clock, UserPlus, PhoneCall } from "lucide-react";
 
 export default async function SalesDashboardPage() {
   const session = await auth();
   const stats = await getSalesStats(session!.user.id);
+  await ensureFollowUpNotifications();
 
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
-  const myTarget = await getMyTarget(session!.user.id, currentMonth, currentYear);
+  const myTarget = await getMyTarget(currentMonth, currentYear);
 
   const monthLabel = now.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
 
@@ -67,18 +70,65 @@ export default async function SalesDashboardPage() {
   ];
 
   const quickActions = [
-  { label: "Call New Leads", href: "/dashboard/admin/leads?status=NEW", color: "bg-blue-500" },
-  { label: "Contacted Leads", href: "/dashboard/admin/leads?status=CONTACTED", color: "bg-cyan-500" },
-  { label: "View Converted", href: "/dashboard/admin/leads?status=CONVERTED", color: "bg-emerald-500" },
-  { label: "Pending Follow-ups", href: "/dashboard/admin/leads?status=PENDING", color: "bg-amber-500" },
-  { label: "Not Interested", href: "/dashboard/admin/leads?status=NOT_INTERESTED", color: "bg-red-500" },
-];
+    { label: "Call New Leads", href: "/dashboard/admin/leads?status=NEW", color: "bg-blue-500" },
+    { label: "Contacted Leads", href: "/dashboard/admin/leads?status=CONTACTED", color: "bg-cyan-500" },
+    { label: "View Converted", href: "/dashboard/admin/leads?status=CONVERTED", color: "bg-emerald-500" },
+    { label: "Pending Follow-ups", href: "/dashboard/admin/leads?status=PENDING", color: "bg-amber-500" },
+    { label: "Not Interested", href: "/dashboard/admin/leads?status=NOT_INTERESTED", color: "bg-red-500" },
+  ];
+
   return (
     <div className="space-y-6">
       <DashboardHero
         title={`Welcome back, ${session?.user?.name}`}
         subtitle="Track your leads, conversions, and follow-ups."
       />
+
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-1">
+            <div>
+              <h3 className="text-base font-semibold">Today's Tasks</h3>
+              <p className="text-sm text-muted-foreground">Quick view of today's important sales work</p>
+            </div>
+            <span className="text-xs rounded-full bg-muted px-3 py-1 text-muted-foreground">
+              {now.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mt-4">
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div>
+                <p className="text-2xl font-bold tabular-nums">{stats.todaysTasks.pendingLeadsToday}</p>
+                <p className="text-sm font-medium">Pending Leads</p>
+                <p className="text-xs text-muted-foreground">Created today, need action</p>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                <Clock className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div>
+                <p className="text-2xl font-bold tabular-nums">{stats.todaysTasks.newLeadsToday}</p>
+                <p className="text-sm font-medium">New Leads Today</p>
+                <p className="text-xs text-muted-foreground">{stats.myLeads} total assigned</p>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+                <UserPlus className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div>
+                <p className="text-2xl font-bold tabular-nums">{stats.todaysTasks.followUpsDueToday}</p>
+                <p className="text-sm font-medium">Follow-ups Due</p>
+                <p className="text-xs text-muted-foreground">Calls / reminders due</p>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                <PhoneCall className="h-5 w-5" />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatWidget
@@ -97,9 +147,9 @@ export default async function SalesDashboardPage() {
         />
         <StatWidget
           title="Follow-ups Due"
-          lines={[{ label: "Scheduled", value: stats.followUpsDue }]}
-          actionLabel="View Meetings"
-          actionHref="/dashboard/admin/meetings"
+          lines={[{ label: "Due Today", value: stats.todaysTasks.followUpsDueToday }]}
+          actionLabel="View Leads"
+          actionHref="/dashboard/admin/leads"
         />
       </div>
 
