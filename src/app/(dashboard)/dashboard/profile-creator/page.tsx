@@ -42,11 +42,13 @@ function QueueRow({
   name,
   phone,
   status,
+  sentByName,
 }: {
   href: string;
   name: string;
   phone: string;
   status: string;
+  sentByName?: string | null;
 }) {
   return (
     <Link
@@ -56,6 +58,9 @@ function QueueRow({
       <div>
         <p className="font-medium">{name}</p>
         <p className="text-sm text-muted-foreground">{phone}</p>
+        {sentByName && (
+          <p className="text-xs text-muted-foreground mt-0.5">Sent by {sentByName}</p>
+        )}
       </div>
       <div className="flex items-center gap-3">
         <Badge variant="outline" className={STATUS_STYLES[status] ?? ""}>
@@ -125,6 +130,7 @@ export default async function ProfileCreatorDashboard() {
                 name={q.lead.name}
                 phone={q.lead.phone}
                 status={q.status}
+                sentByName={q.sentBy?.name}
               />
             ))}
             {pending.length === 0 && (
@@ -151,6 +157,7 @@ export default async function ProfileCreatorDashboard() {
                 name={q.lead.name}
                 phone={q.lead.phone}
                 status={q.status}
+                sentByName={q.sentBy?.name}
               />
             ))}
             {inProgress.length === 0 && (
@@ -179,20 +186,23 @@ export default async function ProfileCreatorDashboard() {
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {completedToday.map((q) => (
-  <div
-    key={q.id}
-    className="rounded-lg border border-emerald-200 bg-emerald-50 p-4"
-  >
-    <p className="font-medium">{q.lead.name}</p>
-    <p className="text-sm text-muted-foreground">{q.lead.phone}</p>
+                <div
+                  key={q.id}
+                  className="rounded-lg border border-emerald-200 bg-emerald-50 p-4"
+                >
+                  <p className="font-medium">{q.lead.name}</p>
+                  <p className="text-sm text-muted-foreground">{q.lead.phone}</p>
+                  {q.sentBy?.name && (
+                    <p className="text-xs text-muted-foreground mt-0.5">Sent by {q.sentBy.name}</p>
+                  )}
 
-    {q.createdProfileId && (
-      <div className="mt-2">
-        <BiodataDownloadButton profileId={q.createdProfileId} />
-      </div>
-    )}
-  </div>
-))}
+                  {q.createdProfileId && (
+                    <div className="mt-2">
+                      <BiodataDownloadButton profileId={q.createdProfileId} />
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </CardContent>

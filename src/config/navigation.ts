@@ -1,4 +1,4 @@
-// src/config/navigation.ts
+﻿// src/config/navigation.ts
 import {
   LayoutDashboard,
   Users,
@@ -34,7 +34,6 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "Approvals", href: "/dashboard/admin/profile-approvals", icon: ClipboardList },
     { label: "Profile Queue", href: "/dashboard/admin/profile-queue", icon: ClipboardList },
     { label: "Service Overview", href: "/dashboard/admin/service-overview", icon: HeartHandshake },
-    { label: "Employees & Roles", href: "/dashboard/admin/employees", icon: Users },
     { label: "Expiring Soon", href: "/dashboard/admin/subscriptions/expiring", icon: CalendarClock },
   ],
   ADMIN: [

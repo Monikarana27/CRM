@@ -4,6 +4,8 @@ declare module "next-auth" {
   interface User {
     role: string;
     active: boolean;
+    accountType?: "staff" | "client";
+    profileId?: string;
   }
   interface Session {
     user: {
@@ -13,6 +15,8 @@ declare module "next-auth" {
       impersonating?: boolean;
       originalUserId?: string;
       originalUserName?: string;
+      accountType?: "staff" | "client";
+      profileId?: string;
     } & DefaultSession["user"];
   }
 }
@@ -24,5 +28,7 @@ declare module "next-auth/jwt" {
     impersonating?: boolean;
     originalUserId?: string;
     originalUserName?: string;
+    accountType?: "staff" | "client";
+    profileId?: string;
   }
 }

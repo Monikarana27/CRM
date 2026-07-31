@@ -14,6 +14,11 @@ export async function GET(
   }
 
   const { profileId } = await params;
+
+  if (session.user.accountType === "client" && session.user.profileId !== profileId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const data = await buildBiodataData(profileId);
   if (!data) {
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });

@@ -1,8 +1,8 @@
-﻿import { auth } from "@/lib/auth/auth";
+import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 
-const ALLOWED_ROLES = ["SUPER_ADMIN", "ADMIN", "SALES", "PROFILE_CREATOR", "SERVICE"];
+const ALLOWED_ROLES = ["SUPER_ADMIN", "ADMIN"];
 const ROLE_ROUTE_MAP: Record<string, string> = {
   SUPER_ADMIN: "admin", ADMIN: "admin", SALES: "sales",
   SERVICE: "service", PROFILE_CREATOR: "profile-creator", HR: "hr",

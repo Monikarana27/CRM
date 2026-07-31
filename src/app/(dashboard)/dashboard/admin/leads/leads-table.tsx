@@ -41,6 +41,7 @@ type LeadRow = {
   assignedTo: { id: string; name: string } | null;
   convertedProfileId: string | null;
   profileQueue: { id: string; status: string } | null;
+  remarks: { remark: string | null; outcome: string; createdAt: Date }[];
 };
 
 type Employee = { id: string; name: string };
@@ -53,6 +54,13 @@ const STATUS_STYLES: Record<string, string> = {
   CLOSED: "bg-gray-100 text-gray-700 border-gray-200",
   INTERESTED: "bg-green-100 text-green-700 border-green-200",
   NOT_INTERESTED: "bg-red-100 text-red-700 border-red-200",
+};
+
+const OUTCOME_STYLES: Record<string, string> = {
+  INTERESTED: "text-green-700",
+  FOLLOW_UP: "text-amber-700",
+  NOT_INTERESTED: "text-red-700",
+  DNP: "text-gray-500",
 };
 
 function LeadRowActions({ lead }: { lead: LeadRow }) {
@@ -113,6 +121,7 @@ function LeadRowActions({ lead }: { lead: LeadRow }) {
     </div>
   );
 }
+
 export function LeadsTable({
   leads,
   employees,
@@ -219,6 +228,30 @@ export function LeadsTable({
           {row.status}
         </Badge>
       ),
+    },
+    {
+      key: "notes",
+      header: "Notes",
+      render: (row) => {
+        const latest = row.remarks[0];
+        if (!latest) {
+          return <span className="text-sm text-muted-foreground italic">No remarks yet</span>;
+        }
+        return (
+          <Link
+            href={`/dashboard/admin/leads/${row.id}`}
+            className="block max-w-[200px] hover:underline"
+            title={latest.remark ?? latest.outcome}
+          >
+            <span className={`text-xs font-medium ${OUTCOME_STYLES[latest.outcome] ?? "text-muted-foreground"}`}>
+              {latest.outcome.replace(/_/g, " ")}
+            </span>
+            {latest.remark && (
+              <p className="text-sm text-muted-foreground truncate">{latest.remark}</p>
+            )}
+          </Link>
+        );
+      },
     },
     {
       key: "followUpDate",

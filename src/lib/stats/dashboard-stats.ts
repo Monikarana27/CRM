@@ -137,40 +137,50 @@ export async function getAdminStats() {
 }
 
 export async function getSalesStats(userId: string) {
-  const [funnel, profileAssignment, followUpsDue, todaysActivityCount, newLeadsToday, pendingLeadsCount] =
-    await Promise.all([
-      getLeadFunnel({ assignedToId: userId }),
-      getProfileAssignmentBreakdown({ assignedToId: userId }),
-      prisma.meeting.count({ where: { assignedToId: userId, status: "SCHEDULED" } }),
-      getTodaysActivityCount(userId),
-      prisma.lead.count({
-        where: {
-          assignedToId: userId,
-          assignmentHistory: {
-            some: {
-              toEmployeeId: userId,
-              changedAt: {
-                gte: new Date(new Date().setHours(0, 0, 0, 0)),
-              },
-            },
-          },
-        },
-      }),
-      prisma.lead.count({ where: { assignedToId: userId, status: "PENDING" } }),
-    ]);
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const [
+    funnel,
+    profileAssignment,
+    todaysActivityCount,
+    newLeadsToday,
+    pendingLeadsCount,
+    pendingLeadsToday,
+    followUpsDueToday,
+  ] = await Promise.all([
+    getLeadFunnel({ assignedToId: userId }),
+    getProfileAssignmentBreakdown({ assignedToId: userId }),
+    getTodaysActivityCount(userId),
+    prisma.lead.count({
+      where: { assignedToId: userId, createdAt: { gte: todayStart, lte: todayEnd } },
+    }),
+    prisma.lead.count({ where: { assignedToId: userId, status: "PENDING" } }),
+    prisma.lead.count({
+      where: { assignedToId: userId, status: "NEW", createdAt: { gte: todayStart, lte: todayEnd } },
+    }),
+    prisma.lead.count({
+      where: { assignedToId: userId, followUpDate: { lte: todayEnd } },
+    }),
+  ]);
 
   return {
     leads: funnel,
     profileAssignment,
-    followUpsDue,
     todaysActivityCount,
     newLeadsToday,
     pendingLeadsCount,
     myLeads: funnel.totalLeads,
     myProfiles: profileAssignment.assigned + profileAssignment.reassigned,
+    todaysTasks: {
+      pendingLeadsToday,
+      newLeadsToday,
+      followUpsDueToday,
+    },
   };
 }
-
 export async function getServiceStats(userId: string) {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);

@@ -11,11 +11,13 @@ export const authConfig: NextAuthConfig = {
   },
   callbacks: {
     authorized({ auth, request }) {
-      const isLoggedIn = !!auth?.user;
-      const isDashboard = request.nextUrl.pathname.startsWith("/dashboard");
-      if (isDashboard) return isLoggedIn;
-      return true;
-    },
+  const isLoggedIn = !!auth?.user;
+  const isProtected =
+    request.nextUrl.pathname.startsWith("/dashboard") ||
+    request.nextUrl.pathname.startsWith("/portal");
+  if (isProtected) return isLoggedIn;
+  return true;
+},
     jwt({ token, user, trigger, session }) {
       if (user) {
         token.role = user.role;

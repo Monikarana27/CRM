@@ -6,7 +6,8 @@ import { revalidatePath } from "next/cache";
 export async function addLeadRemarkAction(
   leadId: string,
   outcome: "INTERESTED" | "FOLLOW_UP" | "NOT_INTERESTED" | "DNP",
-  remark: string
+  remark: string,
+  followUpDate?: string | null
 ) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
@@ -16,18 +17,26 @@ export async function addLeadRemarkAction(
   });
 
   const statusMap: Record<string, "CONTACTED" | "NOT_INTERESTED" | "PENDING" | "INTERESTED"> = {
-  INTERESTED: "INTERESTED",
-  FOLLOW_UP: "PENDING",
-  NOT_INTERESTED: "NOT_INTERESTED",
-  DNP: "PENDING",
-};
-  await prisma.lead.update({ where: { id: leadId }, data: { status: statusMap[outcome] } });
+    INTERESTED: "INTERESTED",
+    FOLLOW_UP: "PENDING",
+    NOT_INTERESTED: "NOT_INTERESTED",
+    DNP: "PENDING",
+  };
+
+  await prisma.lead.update({
+    where: { id: leadId },
+    data: {
+      status: statusMap[outcome],
+      ...(followUpDate ? { followUpDate: new Date(followUpDate) } : {}),
+    },
+  });
 
   await prisma.activityLog.create({
     data: { actorId: session.user.id, action: `LEAD_CALL_${outcome}`, entityType: "Lead", entityId: leadId },
   });
 
   revalidatePath(`/dashboard/admin/leads/${leadId}`);
+  revalidatePath("/dashboard/admin/leads");
 }
 
 export async function getLeadTimeline(leadId: string) {

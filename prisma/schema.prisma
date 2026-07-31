@@ -53,6 +53,7 @@ model User {
   notificationsReceived Notification[]  @relation("NotificationRecipient")
   notificationsSent   Notification[]    @relation("NotificationActor")
   callLogsCreated      CallLog[] @relation("CallLogCreatedBy")
+  sentProfileQueues ProfileQueue[] @relation("ProfileQueueSentBy")
 
   @@index([role])
   @@index([email])
@@ -526,7 +527,8 @@ model ProfileQueue {
   createdProfile  Profile?           @relation(fields: [createdProfileId], references: [id])
   sentToQueueAt   DateTime           @default(now())
   completedAt     DateTime?
-  sentById        String?
+  sentById       String?
+  sentBy         User?    @relation("ProfileQueueSentBy", fields: [sentById], references: [id])
 
   @@index([status])
   @@map("profile_queue")
@@ -737,6 +739,7 @@ enum NotificationType {
   MENTION
   REPLY
   IMPORTANT_ANNOUNCEMENT
+  LEAD_FOLLOWUP
 }
 
 model Notification {
