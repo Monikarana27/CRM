@@ -1,5 +1,6 @@
 import { findCompatibleProfiles } from "@/actions/matching/matching.actions";
 import { prisma } from "@/lib/db/prisma";
+import AiSuggestions from "./ai-suggestions";
 import { DashboardHero } from "@/components/layout/dashboard-hero";
 import { MatchingResults } from "./matching-results";
 
@@ -12,6 +13,7 @@ export default async function MatchingPage({ params }: { params: Promise<{ profi
     <div className="space-y-6">
       <DashboardHero title={`Matches for ${profile?.name}`} subtitle={`${matches.length} compatible profiles found`} />
       <MatchingResults matches={matches} clientEmail={profile?.email ?? ""} />
+      <AiSuggestions profileId={profileId} />
     </div>
   );
 }

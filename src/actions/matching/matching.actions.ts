@@ -37,6 +37,6 @@ export async function findCompatibleProfiles(profileId: string) {
     where,
     take: 50,
     orderBy: { createdAt: "desc" },
-    select: { id: true, name: true, profileCode: true, city: true, religion: true, dob: true, email: true },
+   select: { id: true, name: true, profileCode: true, city: true, religion: true, caste: true, dob: true, email: true, profession: true, annualIncome: true },
   });
 }
