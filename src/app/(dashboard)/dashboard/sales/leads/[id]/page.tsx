@@ -4,7 +4,7 @@ import { DashboardHero } from "@/components/layout/dashboard-hero";
 import { notFound } from "next/navigation";
 import { LeadRemarkForm } from "@/components/leads/lead-remark-form";
 
-export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function SalesLeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const lead = await getLeadById(id);
   if (!lead) notFound();
@@ -13,7 +13,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   return (
     <div className="space-y-6">
       <DashboardHero title={lead.name} subtitle={`${lead.phone} Â· ${lead.status}`} />
-      <LeadRemarkForm leadId={id} />
+      <LeadRemarkForm leadId={id} currentFollowUpDate={lead.followUpDate} />
       <div className="space-y-3">
         {timeline.map((t: (typeof timeline)[number]) => (
           <div key={t.id} className="rounded-lg border p-3 text-sm">

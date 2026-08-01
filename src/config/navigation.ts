@@ -59,7 +59,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
   SALES: [
     { label: "Dashboard", href: "/dashboard/sales", icon: LayoutDashboard },
     { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
-    { label: "My Leads", href: "/dashboard/admin/leads", icon: Handshake },
+    { label: "My Leads", href: "/dashboard/sales/leads", icon: Handshake },
     { label: "Follow-ups", href: "/dashboard/admin/meetings", icon: CalendarClock },
   ],
   PROFILE_CREATOR: [
@@ -84,3 +84,4 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "Payroll", href: "/dashboard/hr/payroll", icon: CreditCard },
   ],
 };
+

@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
 import { revalidatePath } from "next/cache";
@@ -37,6 +37,7 @@ export async function addLeadRemarkAction(
 
   revalidatePath(`/dashboard/admin/leads/${leadId}`);
   revalidatePath("/dashboard/admin/leads");
+  revalidatePath(`/dashboard/sales/leads/${leadId}`);
 }
 
 export async function getLeadTimeline(leadId: string) {

@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
@@ -96,8 +96,13 @@ export async function ensureFollowUpNotifications() {
 }
 
 export async function getLeadById(id: string) {
-  await requireStaff();
-  return prisma.lead.findUnique({ where: { id } });
+  const session = await requireStaff();
+  const lead = await prisma.lead.findUnique({ where: { id } });
+  if (!lead) return null;
+  if (session.user.role === "SALES" && lead.assignedToId !== session.user.id) {
+    return null;
+  }
+  return lead;
 }
 
 export async function createLeadAction(
@@ -298,3 +303,4 @@ export async function getLeadAssignmentHistory(leadId: string) {
     },
   });
 }
+

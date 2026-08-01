@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
@@ -213,7 +213,7 @@ export function LeadsTable({
       header: "Name",
       sortable: true,
       render: (row) => (
-        <Link href={`/dashboard/admin/leads/${row.id}`} className="font-medium text-primary hover:underline">
+        <Link href={`${canAssign ? "/dashboard/admin/leads" : "/dashboard/sales/leads"}/${row.id}`} className="font-medium text-primary hover:underline">
           {row.name}
         </Link>
       ),
@@ -239,7 +239,7 @@ export function LeadsTable({
         }
         return (
           <Link
-            href={`/dashboard/admin/leads/${row.id}`}
+            href={`${canAssign ? "/dashboard/admin/leads" : "/dashboard/sales/leads"}/${row.id}`}
             className="block max-w-[200px] hover:underline"
             title={latest.remark ?? latest.outcome}
           >
@@ -258,7 +258,7 @@ export function LeadsTable({
       header: "Follow-up",
       sortable: true,
       accessor: (row) => (row.followUpDate ? new Date(row.followUpDate).getTime() : 0),
-      render: (row) => (row.followUpDate ? new Date(row.followUpDate).toLocaleDateString("en-IN") : "—"),
+      render: (row) => (row.followUpDate ? new Date(row.followUpDate).toLocaleDateString("en-IN") : "â€”"),
     },
     {
       key: "createdAt",
@@ -280,7 +280,7 @@ export function LeadsTable({
             onUnassign={handleUnassign}
           />
         ) : (
-          <span className="text-sm text-muted-foreground">{row.assignedTo?.name ?? "—"}</span>
+          <span className="text-sm text-muted-foreground">{row.assignedTo?.name ?? "â€”"}</span>
         ),
     },
     {
@@ -372,3 +372,4 @@ export function LeadsTable({
     </div>
   );
 }
+
