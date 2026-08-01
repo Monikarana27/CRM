@@ -2,13 +2,18 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { can } from "@/lib/permissions/can";
 import { paymentSchema } from "@/lib/validations/payment.schema";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-async function requireStaff() {
+async function requirePayments(minAction: "VIEW" | "CREATE" | "EDIT" | "FULL") {
   const session = await auth();
   if (!session?.user) {
+    throw new Error("Unauthorized");
+  }
+  const allowed = await can(session.user.role, "Payments", minAction);
+  if (!allowed) {
     throw new Error("Unauthorized");
   }
   return session;
@@ -21,7 +26,7 @@ async function logActivity(actorId: string, action: string, entityId: string) {
 }
 
 export async function getPayments(filter?: { status?: "PAID" | "PENDING" | "FAILED" }) {
-  await requireStaff();
+  await requirePayments("VIEW");
   return prisma.payment.findMany({
     where: filter?.status ? { status: filter.status } : {},
     orderBy: { createdAt: "desc" },
@@ -37,7 +42,7 @@ export async function getPayments(filter?: { status?: "PAID" | "PENDING" | "FAIL
 }
 
 export async function getPaymentById(id: string) {
-  await requireStaff();
+  await requirePayments("VIEW");
   return prisma.payment.findUnique({
     where: { id },
     include: { subscription: { include: { profile: true, plan: true } } },
@@ -48,7 +53,7 @@ export async function createPaymentAction(
   _prevState: unknown,
   formData: FormData
 ) {
-  const session = await requireStaff();
+  const session = await requirePayments("CREATE");
 
   const parsed = paymentSchema.safeParse({
     subscriptionId: formData.get("subscriptionId"),
@@ -88,7 +93,7 @@ export async function updatePaymentStatusAction(
   paymentId: string,
   status: "PAID" | "PENDING" | "FAILED"
 ) {
-  const session = await requireStaff();
+  const session = await requirePayments("EDIT");
 
   await prisma.payment.update({
     where: { id: paymentId },

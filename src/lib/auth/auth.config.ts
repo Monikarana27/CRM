@@ -1,5 +1,5 @@
-
 import type { NextAuthConfig } from "next-auth";
+import { canAccessRoute, type Role } from "@/lib/permissions/roles";
 
 export const authConfig: NextAuthConfig = {
   pages: {
@@ -11,13 +11,14 @@ export const authConfig: NextAuthConfig = {
   },
   callbacks: {
     authorized({ auth, request }) {
-  const isLoggedIn = !!auth?.user;
-  const isProtected =
-    request.nextUrl.pathname.startsWith("/dashboard") ||
-    request.nextUrl.pathname.startsWith("/portal");
-  if (isProtected) return isLoggedIn;
-  return true;
-},
+      const isLoggedIn = !!auth?.user;
+      const path = request.nextUrl.pathname;
+      const isProtected = path.startsWith("/dashboard") || path.startsWith("/portal");
+      if (!isProtected) return true;
+      if (!isLoggedIn) return false;
+      if (!auth.user.active) return false;
+      return canAccessRoute(auth.user.role as Role, path);
+    },
     jwt({ token, user, trigger, session }) {
       if (user) {
         token.role = user.role;

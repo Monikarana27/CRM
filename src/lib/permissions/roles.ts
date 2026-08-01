@@ -10,11 +10,12 @@ export const ROUTE_ACCESS: Record<string, Role[]> = {
   "/dashboard/service": ["SUPER_ADMIN", "ADMIN", "SERVICE"],
   "/dashboard/profile-creator": ["SUPER_ADMIN", "ADMIN", "PROFILE_CREATOR"],
   "/dashboard/hr": ["SUPER_ADMIN", "HR"],
+  "/dashboard/workspace": ["SUPER_ADMIN", "ADMIN", "SALES", "SERVICE", "PROFILE_CREATOR", "HR"],
 };
 
 export function canAccessRoute(role: Role, path: string): boolean {
   const sortedKeys = Object.keys(ROUTE_ACCESS).sort((a, b) => b.length - a.length);
   const matchedKey = sortedKeys.find((route) => path.startsWith(route));
-  if (!matchedKey) return true;
+  if (!matchedKey) return false;
   return ROUTE_ACCESS[matchedKey].includes(role);
 }

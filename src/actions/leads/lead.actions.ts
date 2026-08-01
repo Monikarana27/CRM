@@ -3,7 +3,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
 import { leadSchema } from "@/lib/validations/lead.schema";
-import { generateProfileCode } from "@/lib/utils/profile-code";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -194,8 +193,12 @@ export async function updateLeadAction(
   revalidatePath("/dashboard/admin/leads");
   redirect("/dashboard/admin/leads");
 }
+
 export async function assignLeadAction(leadId: string, employeeId: string) {
   const session = await requireStaff();
+  if (!["SUPER_ADMIN", "ADMIN"].includes(session.user.role)) {
+    throw new Error("Unauthorized");
+  }
 
   const previous = await prisma.lead.findUnique({
     where: { id: leadId },
@@ -223,6 +226,9 @@ export async function assignLeadAction(leadId: string, employeeId: string) {
 
 export async function unassignLeadAction(leadId: string) {
   const session = await requireStaff();
+  if (!["SUPER_ADMIN", "ADMIN"].includes(session.user.role)) {
+    throw new Error("Unauthorized");
+  }
 
   const previous = await prisma.lead.findUnique({
     where: { id: leadId },
@@ -250,6 +256,9 @@ export async function unassignLeadAction(leadId: string) {
 
 export async function bulkAssignLeadsAction(leadIds: string[], employeeId: string) {
   const session = await requireStaff();
+  if (!["SUPER_ADMIN", "ADMIN"].includes(session.user.role)) {
+    throw new Error("Unauthorized");
+  }
 
   const leadsBefore = await prisma.lead.findMany({
     where: { id: { in: leadIds } },
@@ -275,70 +284,6 @@ export async function bulkAssignLeadsAction(leadIds: string[], employeeId: strin
   }
 
   revalidatePath("/dashboard/admin/leads");
-}
-export async function convertLeadToProfileAction(leadId: string) {
-  const session = await requireStaff();
-
-  if (!["SUPER_ADMIN", "ADMIN", "PROFILE_CREATOR"].includes(session.user.role)) {
-    throw new Error("Only Profile Creators can convert leads to profiles");
-  }
-
-  const lead = await prisma.lead.findUnique({
-    where: { id: leadId },
-  });
-
-  if (!lead) throw new Error("Lead not found");
-
-  if (lead.convertedProfileId) {
-    redirect(`/dashboard/admin/profiles/${lead.convertedProfileId}/edit`);
-  }
-
-  const profileCode = await generateProfileCode(lead.gender ?? "OTHER");
-
-  const profile = await prisma.$transaction(async (tx) => {
-    const createdProfile = await tx.profile.create({
-      data: {
-        profileCode,
-        name: lead.name,
-        phone: lead.phone,
-        email: lead.email,
-        source: lead.source,
-        gender: lead.gender ?? "OTHER",
-        status: "UNASSIGNED",
-        createdById: session.user.id,
-        partnerPreference: { create: {} },
-      },
-    });
-
-    const updatedLead = await tx.lead.updateMany({
-      where: {
-        id: leadId,
-        convertedProfileId: null,
-      },
-      data: {
-        status: "CONVERTED",
-        convertedProfileId: createdProfile.id,
-      },
-    });
-
-    if (updatedLead.count === 0) {
-      throw new Error("Lead has already been converted by another request.");
-    }
-
-    await tx.activityLog.create({
-      data: {
-        actorId: session.user.id,
-        action: "CONVERT_LEAD_TO_PROFILE",
-        entityType: "Lead",
-        entityId: leadId,
-      },
-    });
-
-    return createdProfile;
-  });
-
-  revalidatePath("/dashboard/admin/leads");
-  redirect(`/dashboard/admin/profiles/${profile.id}/edit`);
 }
 
 export async function getLeadAssignmentHistory(leadId: string) {

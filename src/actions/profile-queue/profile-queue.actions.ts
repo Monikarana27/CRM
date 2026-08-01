@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
 import { revalidatePath } from "next/cache";
@@ -6,12 +6,15 @@ import { revalidatePath } from "next/cache";
 export async function sendToProfileCreationAction(leadId: string) {
   const session = await auth();
   if (!session?.user) return { error: "You must be logged in." };
+  if (!["SUPER_ADMIN", "ADMIN", "SALES"].includes(session.user.role)) {
+    return { error: "Only Sales can send leads for profile creation." };
+  }
   const lead = await prisma.lead.findUnique({ where: { id: leadId } });
   if (!lead) return { error: "This lead could not be found." };
   if (lead.status !== "INTERESTED") {
     return { error: "Please mark this lead as Interested before sending it for profile creation." };
   }
-  const existing = await prisma.profileQueue.findUnique({ where: { leadId } });
+  const existing = await prisma.profileQueue.findUnique({ where: { leadId }});
   if (existing) return { error: "This lead has already been sent for profile creation." };
   const queueEntry = await prisma.profileQueue.create({
     data: { leadId, sentById: session.user.id },
@@ -39,6 +42,9 @@ export async function getProfileQueue() {
 export async function markQueueInProgressAction(queueId: string) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
+  if (!["SUPER_ADMIN", "ADMIN", "PROFILE_CREATOR"].includes(session.user.role)) {
+    throw new Error("Unauthorized");
+  }
   await prisma.profileQueue.updateMany({
     where: { id: queueId, status: "PENDING" },
     data: { status: "IN_PROGRESS" },
@@ -48,6 +54,9 @@ export async function markQueueInProgressAction(queueId: string) {
 export async function markQueueCompletedAction(queueId: string, profileId: string) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
+  if (!["SUPER_ADMIN", "ADMIN", "PROFILE_CREATOR"].includes(session.user.role)) {
+    throw new Error("Unauthorized");
+  }
   await prisma.profileQueue.update({
     where: { id: queueId },
     data: { status: "COMPLETED", createdProfileId: profileId, completedAt: new Date() },

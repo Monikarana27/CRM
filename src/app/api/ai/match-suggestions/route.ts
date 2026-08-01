@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
+import { auth } from "@/lib/auth/auth";
 import { findCompatibleProfiles } from "@/actions/matching/matching.actions";
 import { scoreAndRank } from "@/lib/matching/scoring";
 import { generatePitch } from "@/lib/ai/agents/pitch.agent";
@@ -9,6 +10,14 @@ const MIN_MATCHES_THRESHOLD = 5;
 const MAX_PITCHES_TO_GENERATE = 8;
 
 export async function POST(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.user.accountType === "client") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const { profileId } = await req.json();
     if (!profileId) {

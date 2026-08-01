@@ -1,13 +1,13 @@
 import { PrismaClient, Role, PermissionAction } from "@prisma/client";
 const prisma = new PrismaClient();
 
-const MODULES = ["Leads", "Conversion", "ProfileCreation", "Profiles", "Service", "Employees", "Settings"];
+const MODULES = ["Leads", "Conversion", "ProfileCreation", "Profiles", "Service", "Employees", "Settings", "Payments"];
 
 const MATRIX: Record<Role, Record<string, PermissionAction>> = {
   SUPER_ADMIN: Object.fromEntries(MODULES.map((m) => [m, "FULL"])) as any,
   ADMIN: {
     Leads: "FULL", Conversion: "VIEW", ProfileCreation: "APPROVE", Profiles: "FULL",
-    Service: "ASSIGN", Employees: "FULL", Settings: "VIEW",
+    Service: "ASSIGN", Employees: "FULL", Settings: "VIEW", Payments: "FULL",
   },
   SALES: { Leads: "EDIT", Conversion: "CREATE", Profiles: "VIEW" } as any,
   PROFILE_CREATOR: { ProfileCreation: "CREATE", Profiles: "CREATE" } as any,
