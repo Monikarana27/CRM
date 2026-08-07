@@ -62,6 +62,18 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "My Leads", href: "/dashboard/sales/leads", icon: Handshake },
     { label: "Follow-ups", href: "/dashboard/admin/meetings", icon: CalendarClock },
   ],
+  SALES_TL: [
+    { label: "Dashboard", href: "/dashboard/sales", icon: LayoutDashboard },
+    { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
+    { label: "My Leads", href: "/dashboard/sales/leads", icon: Handshake },
+    { label: "Follow-ups", href: "/dashboard/admin/meetings", icon: CalendarClock },
+  ],
+  SALES_MANAGER: [
+    { label: "Dashboard", href: "/dashboard/sales", icon: LayoutDashboard },
+    { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
+    { label: "My Leads", href: "/dashboard/sales/leads", icon: Handshake },
+    { label: "Follow-ups", href: "/dashboard/admin/meetings", icon: CalendarClock },
+  ],
   PROFILE_CREATOR: [
     { label: "Dashboard", href: "/dashboard/profile-creator", icon: LayoutDashboard },
     { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
@@ -74,14 +86,29 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "Welcome Calls", href: "/dashboard/service/welcome-calls", icon: PhoneCall },
     { label: "Service Status", href: "/dashboard/service/status", icon: Activity },
   ],
+  SERVICE_TL: [
+    { label: "Dashboard", href: "/dashboard/service", icon: LayoutDashboard },
+    { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
+    { label: "Assigned Profiles", href: "/dashboard/service/profiles", icon: UserSquare2 },
+    { label: "Meetings", href: "/dashboard/service/meetings", icon: CalendarClock },
+    { label: "Welcome Calls", href: "/dashboard/service/welcome-calls", icon: PhoneCall },
+    { label: "Service Status", href: "/dashboard/service/status", icon: Activity },
+  ],
+  SERVICE_MANAGER: [
+    { label: "Dashboard", href: "/dashboard/service", icon: LayoutDashboard },
+    { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
+    { label: "Assigned Profiles", href: "/dashboard/service/profiles", icon: UserSquare2 },
+    { label: "Meetings", href: "/dashboard/service/meetings", icon: CalendarClock },
+    { label: "Welcome Calls", href: "/dashboard/service/welcome-calls", icon: PhoneCall },
+    { label: "Service Status", href: "/dashboard/service/status", icon: Activity },
+  ],
   HR: [
     { label: "Dashboard", href: "/dashboard/hr", icon: LayoutDashboard },
     { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
-    { label: "Attendance", href: "/dashboard/hr/attendance", icon: CalendarClock },
+    { label: "Attendance", href: "/dashboard/hr/attendance", icon:CalendarClock },
     { label: "Leave", href: "/dashboard/hr/leave", icon: ClipboardList },
     { label: "Recruitment", href: "/dashboard/hr/recruitment", icon: Users },
     { label: "Performance", href: "/dashboard/hr/performance", icon: Activity },
     { label: "Payroll", href: "/dashboard/hr/payroll", icon: CreditCard },
   ],
 };
-

@@ -36,7 +36,7 @@ export async function createProfileFromQueueAction(queueId: string, _prevState: 
       maritalStatus: d.maritalStatus || null,
       height: d.height || null,
       weightKg: d.weightKg || null,
-      motherTongue: d.motherTongue || null,
+      motherTongueId: d.motherTongueId || null, // CHANGED
       bodyType: d.bodyType || null,
       complexion: d.complexion || null,
       bloodGroup: d.bloodGroup || null,
@@ -49,10 +49,10 @@ export async function createProfileFromQueueAction(queueId: string, _prevState: 
       citizenship: d.citizenship || null,
       countryGrewUp: d.countryGrewUp || null,
       visaStatus: d.visaStatus || null,
-      religion: d.religion || null,
-      caste: d.caste || null,
-      subCaste: d.subCaste || null,
-      gotra: d.gotra || null,
+      religionId: d.religionId || null, // CHANGED
+      casteId: d.casteId || null,       // CHANGED
+      subCaste: d.subCaste || null,     // unchanged
+      gotraId: d.gotraId || null,       // CHANGED
       timeOfBirth: d.timeOfBirth || null,
       placeOfBirth: d.placeOfBirth || null,
       manglik: d.manglik || null,
@@ -89,9 +89,9 @@ export async function createProfileFromQueueAction(queueId: string, _prevState: 
           minHeight: d.ppMinHeight || null,
           maxHeight: d.ppMaxHeight || null,
           maritalStatus: d.ppMaritalStatus || null,
-          motherTongue: d.ppMotherTongue || null,
-          religion: d.ppReligion || null,
-          caste: d.ppCaste || null,
+          motherTongueId: d.ppMotherTongueId || null, // CHANGED
+          religionId: d.ppReligionId || null,         // CHANGED
+          casteId: d.ppCasteId || null,               // CHANGED
           manglikStatus: d.ppManglikStatus || null,
           hasChildrenOk: d.ppHasChildrenOk || null,
           country: d.ppCountry || null,

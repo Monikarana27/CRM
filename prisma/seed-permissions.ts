@@ -1,20 +1,21 @@
 import { PrismaClient, Role, PermissionAction } from "@prisma/client";
 const prisma = new PrismaClient();
-
 const MODULES = ["Leads", "Conversion", "ProfileCreation", "Profiles", "Service", "Employees", "Settings", "Payments"];
-
 const MATRIX: Record<Role, Record<string, PermissionAction>> = {
-  SUPER_ADMIN: Object.fromEntries(MODULES.map((m) => [m, "FULL"])) as any,
+  SUPER_ADMIN: Object.fromEntries(MODULES.map((m) => [m, "FULL"]))as any,
   ADMIN: {
-    Leads: "FULL", Conversion: "VIEW", ProfileCreation: "APPROVE", Profiles: "FULL",
+    Leads: "FULL", Conversion: "VIEW", ProfileCreation: "APPROVE",Profiles: "FULL",
     Service: "ASSIGN", Employees: "FULL", Settings: "VIEW", Payments: "FULL",
   },
-  SALES: { Leads: "EDIT", Conversion: "CREATE", Profiles: "VIEW" } as any,
-  PROFILE_CREATOR: { ProfileCreation: "CREATE", Profiles: "CREATE" } as any,
+  SALES: { Leads: "EDIT", Conversion: "CREATE", Profiles: "VIEW" }as any,
+  SALES_TL: { Leads: "ASSIGN", Conversion: "CREATE", Profiles: "VIEW" } as any,
+  SALES_MANAGER: { Leads: "ASSIGN", Conversion: "APPROVE", Profiles: "EDIT" } as any,
+  PROFILE_CREATOR: { ProfileCreation: "CREATE", Profiles: "CREATE"} as any,
   SERVICE: { Profiles: "VIEW", Service: "FULL" } as any,
+  SERVICE_TL: { Profiles: "VIEW", Service: "ASSIGN" } as any,
+  SERVICE_MANAGER: { Profiles: "EDIT", Service: "FULL" } as any,
   HR: { Employees: "FULL" } as any,
 };
-
 async function main() {
   for (const module of MODULES) {
     for (const action of ["VIEW", "CREATE", "EDIT", "APPROVE", "ASSIGN", "FULL"] as PermissionAction[]) {
@@ -25,7 +26,6 @@ async function main() {
       });
     }
   }
-
   for (const [role, modules] of Object.entries(MATRIX)) {
     for (const [module, action] of Object.entries(modules)) {
       const perm = await prisma.permission.findUnique({ where: { module_action: { module, action: action as PermissionAction } } });
@@ -39,5 +39,4 @@ async function main() {
   }
   console.log("Permission matrix seeded.");
 }
-
 main().then(() => prisma.$disconnect());

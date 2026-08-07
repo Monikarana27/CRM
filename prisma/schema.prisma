@@ -8,11 +8,15 @@ datasource db {
 }
 
 enum Role {
-  SUPER_ADMIN
+   SUPER_ADMIN
   ADMIN
   SALES
+  SALES_TL
+  SALES_MANAGER
   PROFILE_CREATOR
   SERVICE
+  SERVICE_TL
+  SERVICE_MANAGER
   HR
 }
 enum Department {
@@ -33,6 +37,10 @@ model User {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  managerId String?
+  manager   User?    @relation("UserHierarchy", fields: [managerId], references: [id], onDelete: SetNull)
+  directReports User[] @relation("UserHierarchy")
 
   activityLogs ActivityLog[] @relation("ActorLogs")
   assignedProfiles Profile[]     @relation("AssignedProfiles")
@@ -57,6 +65,7 @@ model User {
 
   @@index([role])
   @@index([email])
+  @@index([managerId])
   @@map("users")
 }
 
@@ -113,7 +122,9 @@ model Profile {
   maritalStatus String?
   height        String?
   weightKg      Float?
-  motherTongue  String?
+  motherTongueOld  String?  @map("motherTongue")
+  motherTongueId   String?
+  motherTongueRef  MotherTongueRef? @relation(fields: [motherTongueId], references: [id], onDelete: SetNull)
   bodyType      String?
   complexion    String?
   bloodGroup    String?
@@ -130,10 +141,16 @@ model Profile {
   visaStatus    String?
 
   // Religion & Horoscope
-  religion      String?
-  caste         String?
+  religionOld   String?  @map("religion")
+  religionId    String?
+  religion      Religion? @relation(fields: [religionId], references: [id], onDelete: SetNull)
+  casteOld      String?  @map("caste")
+  casteId       String?
+  caste         Caste?   @relation(fields: [casteId], references: [id], onDelete: SetNull)
   subCaste      String?
-  gotra         String?
+  gotraOld      String?  @map("gotra")
+  gotraId       String?
+  gotra         Gotra?   @relation(fields: [gotraId], references: [id], onDelete: SetNull)
   timeOfBirth   String?
   placeOfBirth  String?
   manglik       String?
@@ -197,8 +214,13 @@ model Profile {
   @@index([assignedToId])
   @@index([phone])
   @@index([profileCode])
+  @@index([religionId])
+  @@index([casteId])
+  @@index([gotraId])
+  @@index([motherTongueId])
   @@map("profiles")
 }
+
 
 model PartnerPreference {
   id          String   @id @default(cuid())
@@ -211,9 +233,15 @@ model PartnerPreference {
   maxHeight     String?
 
   maritalStatus String?
-  motherTongue  String?
-  religion      String?
-  caste         String?
+  motherTongueOld  String?  @map("motherTongue")
+  motherTongueId   String?
+  motherTongueRef  MotherTongueRef? @relation(fields: [motherTongueId], references: [id], onDelete: SetNull)
+  religionOld   String?  @map("religion")
+  religionId    String?
+  religion      Religion? @relation(fields: [religionId], references: [id], onDelete: SetNull)
+  casteOld      String?  @map("caste")
+  casteId       String?
+  caste         Caste?   @relation(fields: [casteId], references: [id], onDelete: SetNull)
   manglikStatus String?
   hasChildrenOk String?
 
@@ -235,18 +263,21 @@ model PartnerPreference {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  @@index([religionId])
+  @@index([casteId])
+  @@index([motherTongueId])
   @@map("partner_preferences")
 }
-
 enum LeadStatus {
   NEW
   CONTACTED
   CONVERTED
   PENDING
-  INTERESTED
-  NOT_INTERESTED
   CLOSED
+  NOT_INTERESTED
+  INTERESTED
 }
+
 
 model Lead {
   id          String     @id @default(cuid())
@@ -292,6 +323,7 @@ model Plan {
   durationDays  Int
   description   String?
   active        Boolean         @default(true)
+  
 
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -784,4 +816,57 @@ enum MeetingOutcome {
   ONE_SIDED
   FOLLOW_UP_NEEDED
 }
+
+model Religion {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  castes             Caste[]
+  profiles           Profile[]
+  partnerPreferences PartnerPreference[]
+
+  @@map("religions")
+}
+
+model Caste {
+  id         String     @id @default(cuid())
+  name       String
+  religionId String?
+  religion   Religion?  @relation(fields: [religionId], references: [id], onDelete: SetNull)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  profiles           Profile[]
+  partnerPreferences PartnerPreference[]
+
+  @@unique([name, religionId])
+  @@index([religionId])
+  @@map("castes")
+}
+
+model Gotra {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  profiles   Profile[]
+
+  @@map("gotras")
+}
+
+model MotherTongueRef {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  profiles           Profile[]
+  partnerPreferences PartnerPreference[]
+
+  @@map("mother_tongues")
+}
+
 

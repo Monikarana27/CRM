@@ -1,11 +1,13 @@
 import { prisma } from "@/lib/db/prisma";
 
-async function getLeadFunnel(where: { assignedToId?: string } = {}) {
+type IdFilter = string | { in: string[] };
+
+async function getLeadFunnel(where: { assignedToId?: IdFilter } = {}) {
   const [newLeads, contactedLeads, convertedLeads, pendingLeads, notInterestedLeads, totalLeads] =
     await Promise.all([
       prisma.lead.count({ where: { ...where, status: "NEW" } }),
-      prisma.lead.count({ where: { ...where, status: "CONTACTED" } }),
-      prisma.lead.count({ where: { ...where, status: "CONVERTED" } }),
+      prisma.lead.count({ where: { ...where, status: "CONTACTED" }}),
+      prisma.lead.count({ where: { ...where, status: "CONVERTED" }}),
       prisma.lead.count({ where: { ...where, status: "PENDING" } }),
       prisma.lead.count({ where: { ...where, status: "NOT_INTERESTED" } }),
       prisma.lead.count({ where }),
@@ -24,16 +26,16 @@ async function getLeadFunnel(where: { assignedToId?: string } = {}) {
   };
 }
 
-async function getProfileAssignmentBreakdown(where: { assignedToId?: string } = {}) {
+async function getProfileAssignmentBreakdown(where: { assignedToId?: IdFilter } = {}) {
   const [assigned, reassigned, unassigned] = await Promise.all([
-    prisma.profile.count({ where: { ...where, status: "ASSIGNED" } }),
-    prisma.profile.count({ where: { ...where, status: "REASSIGNED" } }),
-    prisma.profile.count({ where: { ...where, status: "UNASSIGNED" } }),
+    prisma.profile.count({ where: { ...where, status: "ASSIGNED" }}),
+    prisma.profile.count({ where: { ...where, status: "REASSIGNED"} }),
+    prisma.profile.count({ where: { ...where, status: "UNASSIGNED"} }),
   ]);
   return { assigned, reassigned, unassigned };
 }
 
-async function getTodaysActivityCount(actorId?: string) {
+async function getTodaysActivityCount(actorId?: IdFilter) {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
   const todayEnd = new Date();
@@ -155,14 +157,14 @@ export async function getSalesStats(userId: string) {
     getProfileAssignmentBreakdown({ assignedToId: userId }),
     getTodaysActivityCount(userId),
     prisma.lead.count({
-      where: { assignedToId: userId, createdAt: { gte: todayStart, lte: todayEnd } },
+      where: { assignedToId: userId, createdAt: { gte: todayStart,lte: todayEnd } },
     }),
     prisma.lead.count({ where: { assignedToId: userId, status: "PENDING" } }),
     prisma.lead.count({
       where: { assignedToId: userId, status: "NEW", createdAt: { gte: todayStart, lte: todayEnd } },
     }),
     prisma.lead.count({
-      where: { assignedToId: userId, followUpDate: { lte: todayEnd } },
+      where: { assignedToId: userId, followUpDate: { lte: todayEnd} },
     }),
   ]);
 
@@ -181,6 +183,60 @@ export async function getSalesStats(userId: string) {
     },
   };
 }
+
+/**
+ * Same shape as getSalesStats, aggregated across an entire team
+ * (an array of user IDs — typically the result of getTeamMemberIds).
+ * Used on the Sales Manager / Sales TL dashboard's "My Team" section.
+ */
+export async function getTeamSalesStats(teamIds: string[]) {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const idFilter = { in: teamIds };
+
+  const [
+    funnel,
+    profileAssignment,
+    todaysActivityCount,
+    newLeadsToday,
+    pendingLeadsCount,
+    pendingLeadsToday,
+    followUpsDueToday,
+  ] = await Promise.all([
+    getLeadFunnel({ assignedToId: idFilter }),
+    getProfileAssignmentBreakdown({ assignedToId: idFilter }),
+    getTodaysActivityCount(idFilter),
+    prisma.lead.count({
+      where: { assignedToId: idFilter, createdAt: { gte: todayStart, lte: todayEnd } },
+    }),
+    prisma.lead.count({ where: { assignedToId: idFilter, status: "PENDING" } }),
+    prisma.lead.count({
+      where: { assignedToId: idFilter, status: "NEW", createdAt: { gte: todayStart, lte: todayEnd } },
+    }),
+    prisma.lead.count({
+      where: { assignedToId: idFilter, followUpDate: { lte: todayEnd } },
+    }),
+  ]);
+
+  return {
+    leads: funnel,
+    profileAssignment,
+    todaysActivityCount,
+    newLeadsToday,
+    pendingLeadsCount,
+    teamLeads: funnel.totalLeads,
+    teamProfiles: profileAssignment.assigned + profileAssignment.reassigned,
+    todaysTasks: {
+      pendingLeadsToday,
+      newLeadsToday,
+      followUpsDueToday,
+    },
+  };
+}
+
 export async function getServiceStats(userId: string) {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -204,7 +260,7 @@ export async function getServiceStats(userId: string) {
       },
     }),
     prisma.subscription.count({
-      where: { status: "ACTIVE", profile: { assignedToId: userId } },
+      where: { status: "ACTIVE", profile: { assignedToId: userId }},
     }),
     prisma.profile.count({ where: { assignedToId: userId, status: "ON_HOLD" } }),
     prisma.subscription.count({
@@ -221,6 +277,65 @@ export async function getServiceStats(userId: string) {
       include: { profile: { select: { name: true } } },
     }),
     getTodaysActivityCount(userId),
+  ]);
+
+  return {
+    assignedProfiles,
+    meetingsToday,
+    activeServiceCount,
+    onHoldProfiles,
+    expiredServiceCount,
+    upcomingMeetings,
+    todaysActivityCount,
+  };
+}
+
+/**
+ * Same shape as getServiceStats, aggregated across an entire team.
+ * Used on the Service Manager / Service TL dashboard's "My Team" section.
+ */
+export async function getTeamServiceStats(teamIds: string[]) {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const idFilter = { in: teamIds };
+
+  const [
+    assignedProfiles,
+    meetingsToday,
+    activeServiceCount,
+    onHoldProfiles,
+    expiredServiceCount,
+    upcomingMeetings,
+    todaysActivityCount,
+  ] = await Promise.all([
+    prisma.profile.count({ where: { assignedToId: idFilter } }),
+    prisma.meeting.count({
+      where: {
+        assignedToId: idFilter,
+        scheduledAt: { gte: todayStart, lte: todayEnd },
+      },
+    }),
+    prisma.subscription.count({
+      where: { status: "ACTIVE", profile: { assignedToId: idFilter } },
+    }),
+    prisma.profile.count({ where: { assignedToId: idFilter, status: "ON_HOLD" } }),
+    prisma.subscription.count({
+      where: { status: "EXPIRED", profile: { assignedToId: idFilter } },
+    }),
+    prisma.meeting.findMany({
+      where: {
+        assignedToId: idFilter,
+        scheduledAt: { gte: todayStart },
+        status: "SCHEDULED",
+      },
+      orderBy: { scheduledAt: "asc" },
+      take: 5,
+      include: { profile: { select: { name: true } } },
+    }),
+    getTodaysActivityCount(idFilter),
   ]);
 
   return {

@@ -20,7 +20,7 @@ export const profileSchema = z.object({
   maritalStatus: z.string().optional(),
   height: z.string().optional(),
   weightKg: z.coerce.number().optional().or(z.literal("").transform(() => undefined)),
-  motherTongue: z.string().optional(),
+  motherTongueId: z.string().optional(), // CHANGED from motherTongue: z.string()
   bodyType: z.string().optional(),
   complexion: z.string().optional(),
   bloodGroup: z.string().optional(),
@@ -37,10 +37,10 @@ export const profileSchema = z.object({
   visaStatus: z.string().optional(),
 
   // Religion & Horoscope
-  religion: z.string().optional(),
-  caste: z.string().optional(),
-  subCaste: z.string().optional(),
-  gotra: z.string().optional(),
+  religionId: z.string().optional(), // CHANGED from religion: z.string()
+  casteId: z.string().optional(),    // CHANGED from caste: z.string()
+  subCaste: z.string().optional(),   // unchanged — stays free text
+  gotraId: z.string().optional(),    // CHANGED from gotra: z.string()
   timeOfBirth: z.string().optional(),
   placeOfBirth: z.string().optional(),
   manglik: z.string().optional(),
@@ -80,9 +80,9 @@ export const profileSchema = z.object({
   ppMinHeight: z.string().optional(),
   ppMaxHeight: z.string().optional(),
   ppMaritalStatus: z.string().optional(),
-  ppMotherTongue: z.string().optional(),
-  ppReligion: z.string().optional(),
-  ppCaste: z.string().optional(),
+  ppMotherTongueId: z.string().optional(), // CHANGED from ppMotherTongue: z.string()
+  ppReligionId: z.string().optional(),     // CHANGED from ppReligion: z.string()
+  ppCasteId: z.string().optional(),        // CHANGED from ppCaste: z.string()
   ppManglikStatus: z.string().optional(),
   ppHasChildrenOk: z.string().optional(),
   ppCountry: z.string().optional(),

@@ -3,11 +3,15 @@ import { StatWidget } from "@/components/widgets/stat-widget";
 import { FunnelBreakdown } from "@/components/widgets/funnel-breakdown";
 import { ConversionRateCard } from "@/components/widgets/conversion-rate-card";
 import { DashboardHero } from "@/components/layout/dashboard-hero";
-import { getSalesStats } from "@/lib/stats/dashboard-stats";
-import { getMyTarget } from "@/actions/sales-targets/sales-target.actions";
+import { getSalesStats, getTeamSalesStats } from "@/lib/stats/dashboard-stats";
+import { getMyTarget, getTeamSalesTargetsForMonth } from "@/actions/sales-targets/sales-target.actions";
+import { getTeamMemberIds } from "@/lib/hierarchy/team";
+import { SalesTargetsGrid } from "@/components/shared/sales-targets-grid";
 import { Card, CardContent } from "@/components/ui/card";
 import { ensureFollowUpNotifications } from "@/actions/leads/lead.actions";
-import { Clock, UserPlus, PhoneCall } from "lucide-react";
+import { Clock, UserPlus, PhoneCall, Users } from "lucide-react";
+
+const SALES_TEAM_ROLES = ["SALES_TL", "SALES_MANAGER"];
 
 export default async function SalesDashboardPage() {
   const session = await auth();
@@ -23,7 +27,7 @@ export default async function SalesDashboardPage() {
 
   const targetPct =
     myTarget.targetAmount && myTarget.targetAmount > 0
-      ? Math.min((myTarget.achievedAmount / myTarget.targetAmount) * 100, 100)
+      ? Math.min((myTarget.achievedAmount / myTarget.targetAmount)* 100, 100)
       : 0;
   const remaining = myTarget.targetAmount
     ? Math.max(myTarget.targetAmount - myTarget.achievedAmount, 0)
@@ -77,6 +81,17 @@ export default async function SalesDashboardPage() {
     { label: "Not Interested", href: "/dashboard/admin/leads?status=NOT_INTERESTED", color: "bg-red-500" },
   ];
 
+  const isTeamRole = SALES_TEAM_ROLES.includes(session!.user.role);
+  let teamIds: string[] = [];
+  let teamStats: Awaited<ReturnType<typeof getTeamSalesStats>> | null = null;
+  let teamTargets: Awaited<ReturnType<typeof getTeamSalesTargetsForMonth>> = [];
+
+  if (isTeamRole) {
+    teamIds = await getTeamMemberIds(session!.user.id);
+    teamStats = await getTeamSalesStats(teamIds);
+    teamTargets = await getTeamSalesTargetsForMonth(currentMonth, currentYear);
+  }
+
   return (
     <div className="space-y-6">
       <DashboardHero
@@ -120,7 +135,7 @@ export default async function SalesDashboardPage() {
               <div>
                 <p className="text-2xl font-bold tabular-nums">{stats.todaysTasks.followUpsDueToday}</p>
                 <p className="text-sm font-medium">Follow-ups Due</p>
-                <p className="text-xs text-muted-foreground">Calls / reminders due</p>
+                <p className="text-xs text-muted-foreground">Calls/ reminders due</p>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                 <PhoneCall className="h-5 w-5" />
@@ -222,6 +237,53 @@ export default async function SalesDashboardPage() {
           </a>
         ))}
       </div>
+
+      {isTeamRole && (
+        <div className="space-y-4 border-t pt-6">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">My Team</h2>
+          </div>
+
+          {teamIds.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              You don't have any team members assigned yet.
+            </p>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <StatWidget
+                  title="Team Leads"
+                  lines={[{ label: "All Team Leads", value: teamStats!.teamLeads }]}
+                />
+                <StatWidget
+                  title="Team Converted"
+                  lines={[{ label: "This Total", value: teamStats!.leads.convertedLeads }]}
+                />
+                <StatWidget
+                  title="Team New Leads Today"
+                  lines={[{ label: "Today", value: teamStats!.newLeadsToday }]}
+                />
+                <StatWidget
+                  title="Team Follow-ups Due"
+                  lines={[{ label: "Due Today", value: teamStats!.todaysTasks.followUpsDueToday }]}
+                />
+              </div>
+
+              <div>
+                <h3 className="mb-3 text-sm font-medium text-muted-foreground">
+                  Team Targets — {monthLabel}
+                </h3>
+                <SalesTargetsGrid
+                  targets={teamTargets}
+                  selectedMonth={currentMonth}
+                  selectedYear={currentYear}
+                />
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

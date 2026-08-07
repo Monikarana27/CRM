@@ -18,18 +18,8 @@ const EXT_TO_MIME: Record<string, string> = {
   ".png": "image/png",
 };
 
-// profile.photoUrl is stored as a relative web path like "/uploads/xxx.jpg".
-// react-pdf's Image component can't reliably resolve relative paths (or even
-// same-origin http URLs) during server-side PDF rendering — on Windows a
-// leading "/uploads/..." resolves against the current drive root, producing
-// "C:\uploads\..." and an ENOENT. Reading the file directly off disk and
-// inlining it as a base64 data URI sidesteps all of that.
 async function resolvePhotoDataUri(photoUrl: string | null): Promise<string | null> {
   if (!photoUrl) return null;
-
-  // Only handle our own local relative uploads; real absolute URLs
-  // (e.g. S3/Cloudinary, if you move to that later) pass through unchanged —
-  // react-pdf can fetch those over http(s) fine.
   if (!photoUrl.startsWith("/uploads/")) return photoUrl;
 
   try {
@@ -40,14 +30,27 @@ async function resolvePhotoDataUri(photoUrl: string | null): Promise<string | nu
     return `data:${mime};base64,${fileBuffer.toString("base64")}`;
   } catch (err) {
     console.error(`Could not read profile photo at ${photoUrl}:`, err);
-    return null; // falls back to the "NO PHOTO" placeholder in the template
+    return null;
   }
 }
 
 export async function buildBiodataData(profileId: string) {
   const profile = await prisma.profile.findUnique({
     where: { id: profileId },
-    include: { partnerPreference: true },
+    include: {
+      partnerPreference: {
+        include: {
+          religion: true,
+          caste: true,
+          motherTongueRef: true,
+        },
+      },
+      // NEW: pull the normalized relations so we can read .name below
+      religion: true,
+      caste: true,
+      gotra: true,
+      motherTongueRef: true,
+    },
   });
   if (!profile) return null;
 
@@ -63,7 +66,9 @@ export async function buildBiodataData(profileId: string) {
     height: profile.height,
     weightKg: profile.weightKg,
     maritalStatus: profile.maritalStatus,
-    motherTongue: profile.motherTongue,
+    // CHANGED: relation object -> .name, matches how the Blade template
+    // in Elite ultimately just prints the name string too
+    motherTongue: profile.motherTongueRef?.name ?? null,
     bodyType: profile.bodyType,
     complexion: profile.complexion,
     bloodGroup: profile.bloodGroup,
@@ -73,10 +78,11 @@ export async function buildBiodataData(profileId: string) {
     city: profile.city,
     state: profile.state,
     country: profile.country,
-    religion: profile.religion,
-    caste: profile.caste,
-    subCaste: profile.subCaste,
-    gotra: profile.gotra,
+    // CHANGED: relation objects -> .name
+    religion: profile.religion?.name ?? null,
+    caste: profile.caste?.name ?? null,
+    subCaste: profile.subCaste, // unchanged — still free text
+    gotra: profile.gotra?.name ?? null,
     timeOfBirth: profile.timeOfBirth,
     placeOfBirth: profile.placeOfBirth,
     manglik: profile.manglik,
@@ -108,8 +114,9 @@ export async function buildBiodataData(profileId: string) {
           minHeight: profile.partnerPreference.minHeight,
           maxHeight: profile.partnerPreference.maxHeight,
           maritalStatus: profile.partnerPreference.maritalStatus,
-          religion: profile.partnerPreference.religion,
-          caste: profile.partnerPreference.caste,
+          // CHANGED: relation objects -> .name
+          religion: profile.partnerPreference.religion?.name ?? null,
+          caste: profile.partnerPreference.caste?.name ?? null,
           qualification: profile.partnerPreference.qualification,
           profession: profile.partnerPreference.profession,
           aboutDesiredPartner: profile.partnerPreference.aboutDesiredPartner,

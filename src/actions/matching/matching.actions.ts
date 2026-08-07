@@ -21,8 +21,9 @@ export async function findCompatibleProfiles(profileId: string) {
     ...(oppositeGender ? { gender: oppositeGender } : {}),
   };
 
-  if (pref?.religion) where.religion = pref.religion;
-  if (pref?.caste) where.caste = pref.caste;
+  // CHANGED: filter by normalized IDs instead of free-text strings
+  if (pref?.religionId) where.religionId = pref.religionId;
+  if (pref?.casteId) where.casteId = pref.casteId;
   if (pref?.city) where.city = pref.city;
   if (pref?.maritalStatus) where.maritalStatus = pref.maritalStatus;
 
@@ -37,6 +38,20 @@ export async function findCompatibleProfiles(profileId: string) {
     where,
     take: 50,
     orderBy: { createdAt: "desc" },
-   select: { id: true, name: true, profileCode: true, city: true, religion: true, caste: true, dob: true, email: true, profession: true, annualIncome: true },
+    // CHANGED: select the IDs (for scoring) plus the relation's .name (for display)
+    select: {
+      id: true,
+      name: true,
+      profileCode: true,
+      city: true,
+      religionId: true,
+      religion: { select: { name: true } },
+      casteId: true,
+      caste: { select: { name: true } },
+      dob: true,
+      email: true,
+      profession: true,
+      annualIncome: true,
+    },
   });
 }

@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
@@ -53,7 +53,7 @@ export type ProfileStatusLabel =
   | "Needs Changes";
 
 export type UnifiedProfileRow = {
-  id: string; // profileId if it exists, else leadId — used as the table row key
+  id: string; // profileId if it exists, else leadId Ã¢â‚¬â€ used as the table row key
   kind: "LEAD" | "QUEUE" | "PROFILE";
   profileId: string | null;
   leadId: string | null;
@@ -67,7 +67,7 @@ export type UnifiedProfileRow = {
   city: string | null;
   religion: string | null;
   dob: Date | null;
-  status: string | null; // ProfileStatus — only meaningful once a Profile exists
+  status: string | null; // ProfileStatus Ã¢â‚¬â€ only meaningful once a Profile exists
   approvalStatus: string | null;
   profileStatusLabel: ProfileStatusLabel;
   createdAt: Date;
@@ -83,7 +83,7 @@ export async function getUnifiedProfiles(filter?: {
   const session = await requireStaff();
   const isScopedRole = ["SALES", "SERVICE"].includes(session.user.role);
 
-  // Existing completed/in-progress-via-approval profiles — unchanged behavior.
+  // Existing completed/in-progress-via-approval profiles Ã¢â‚¬â€ unchanged behavior.
   const profiles = await prisma.profile.findMany({
     where: {
       ...(isScopedRole ? { assignedToId: session.user.id } : {}),
@@ -95,7 +95,6 @@ export async function getUnifiedProfiles(filter?: {
     orderBy: { createdAt: "desc" },
     include: {
       assignedTo: { select: { id: true, name: true } },
-      religion: { select: { name: true } }, // NEW: need this to display religion below
     },
   });
 
@@ -112,7 +111,7 @@ export async function getUnifiedProfiles(filter?: {
     email: p.email,
     photoUrl: p.photoUrl,
     city: p.city,
-    religion: p.religion?.name ?? null, // CHANGED: relation -> .name
+    religion: p.religion,
     dob: p.dob,
     status: p.status,
     approvalStatus: p.approvalStatus,
@@ -127,7 +126,7 @@ export async function getUnifiedProfiles(filter?: {
   }));
 
   // Skip the two "in flight" categories entirely when a specific ProfileStatus
-  // tab/filter is active — those don't apply until a Profile actually exists.
+  // tab/filter is active Ã¢â‚¬â€ those don't apply until a Profile actually exists.
   if (filter?.status || filter?.source || filter?.approvalStatus) {
     return profileRows;
   }
@@ -380,3 +379,6 @@ export async function getProfileHistory(profileId: string) {
     include: { actor: { select: { name: true } } },
   });
 }
+
+
+

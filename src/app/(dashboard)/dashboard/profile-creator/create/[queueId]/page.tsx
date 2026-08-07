@@ -20,7 +20,7 @@ export default async function CreateFromQueuePage({ params }: { params: Promise<
   await markQueueInProgressAction(queueId);
 
   if (!queueEntry.createdProfileId) {
-    const boundDraftAction = createDraftProfileFromQueueAction.bind(null, queueId);
+    const boundDraftAction = createDraftProfileFromQueueAction.bind(null,queueId);
     return (
       <div className="space-y-6">
         <DashboardHero title={`Create Profile — ${queueEntry.lead.name}`} subtitle={queueEntry.lead.phone} />
@@ -38,6 +38,10 @@ export default async function CreateFromQueuePage({ params }: { params: Promise<
   });
   if (!profile) notFound();
 
+  // NOTE: `...profile` below already spreads religionId/casteId/gotraId/motherTongueId
+  // directly (those are scalar FK fields on Profile now), so the top-level profile
+  // fields need no remapping here — only the pp* (partner preference) fields do,
+  // since those get renamed to ppXId to match the updated zod schema.
   const dv: Record<string, any> = {
     ...profile,
     ...(profile.partnerPreference
@@ -47,9 +51,9 @@ export default async function CreateFromQueuePage({ params }: { params: Promise<
           ppMinHeight: profile.partnerPreference.minHeight,
           ppMaxHeight: profile.partnerPreference.maxHeight,
           ppMaritalStatus: profile.partnerPreference.maritalStatus,
-          ppMotherTongue: profile.partnerPreference.motherTongue,
-          ppReligion: profile.partnerPreference.religion,
-          ppCaste: profile.partnerPreference.caste,
+          ppMotherTongueId: profile.partnerPreference.motherTongueId, // CHANGED
+          ppReligionId: profile.partnerPreference.religionId,         // CHANGED
+          ppCasteId: profile.partnerPreference.casteId,               // CHANGED
           ppManglikStatus: profile.partnerPreference.manglikStatus,
           ppHasChildrenOk: profile.partnerPreference.hasChildrenOk,
           ppCountry: profile.partnerPreference.country,

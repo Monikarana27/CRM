@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
 import { findCompatibleProfiles } from "@/actions/matching/matching.actions";
@@ -10,14 +10,16 @@ const MIN_MATCHES_THRESHOLD = 5;
 const MAX_PITCHES_TO_GENERATE = 8;
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
+ const session = await auth();
   if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401});
   }
-  if (session.user.accountType === "client") {
+  if (!session.user.active) {
+    return NextResponse.json({ error: "Account is inactive" }, { status: 403 });
+  }
+  if (!["SERVICE", "ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-
   try {
     const { profileId } = await req.json();
     if (!profileId) {
@@ -42,6 +44,9 @@ export async function POST(req: NextRequest) {
     }
 
     const candidates = await findCompatibleProfiles(profileId);
+    // CHANGED: scoreAndRank now compares religionId/casteId — client.partnerPreference
+    // already has religionId/casteId scalar fields after the schema migration, no change
+    // needed on this line itself, just confirming the shape lines up.
     const ranked = scoreAndRank(candidates, client.partnerPreference);
 
     if (ranked.length >= MIN_MATCHES_THRESHOLD) {
@@ -71,7 +76,7 @@ export async function POST(req: NextRequest) {
                 profileCode: candidate.profileCode,
                 name: candidate.name,
                 city: candidate.city,
-                religion: candidate.religion,
+                religion: candidate.religion?.name ?? null, // CHANGED: relation -> .name
               },
               score: candidate.score,
               reasoning: pitch.reasoning,

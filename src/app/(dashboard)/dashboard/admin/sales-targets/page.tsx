@@ -1,6 +1,6 @@
 import { getSalesTargetsForMonth } from "@/actions/sales-targets/sales-target.actions";
 import { DashboardHero } from "@/components/layout/dashboard-hero";
-import { SalesTargetsGrid } from "./sales-targets-grid";
+import { SalesTargetsGrid } from "@/components/shared/sales-targets-grid";
 
 export default async function SalesTargetsPage({
   searchParams,

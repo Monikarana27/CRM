@@ -4,6 +4,9 @@ import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
 import { salesTargetSchema } from "@/lib/validations/sales-target.schema";
 import { revalidatePath } from "next/cache";
+import { getTeamMemberIds } from "@/lib/hierarchy/team";
+
+const TEAM_SCOPED_ROLES = ["SALES_TL", "SALES_MANAGER", "SERVICE_TL", "SERVICE_MANAGER"];
 
 async function requireAdmin() {
   const session = await auth();
@@ -16,6 +19,14 @@ async function requireAdmin() {
 async function requireStaff() {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
+  return session;
+}
+
+async function requireTeamScoped() {
+  const session = await auth();
+  if (!session?.user || !TEAM_SCOPED_ROLES.includes(session.user.role)) {
+    throw new Error("Unauthorized");
+  }
   return session;
 }
 
@@ -76,6 +87,46 @@ export async function getSalesTargetsForMonth(month: number, year: number) {
   return results;
 }
 
+/**
+ * Team-scoped version of getSalesTargetsForMonth. Restricted to the 4
+ * hierarchy roles (TL/Manager for Sales and Service). Returns targets
+ * for the calling user's full recursive team (direct + indirect
+ * reports), not the whole org.
+ */
+export async function getTeamSalesTargetsForMonth(month: number, year: number) {
+  const session = await requireTeamScoped();
+
+  const teamIds = await getTeamMemberIds(session.user.id);
+
+  if (teamIds.length === 0) {
+    return [];
+  }
+
+  const employees = await prisma.user.findMany({
+    where: { active: true, id: { in: teamIds } },
+    select: { id: true, name: true, role: true },
+    orderBy: { name: "asc" },
+  });
+
+  const targets = await prisma.salesTarget.findMany({
+    where: { month, year, userId: { in: teamIds } },
+  });
+
+  const results = await Promise.all(
+    employees.map(async (emp) => {
+      const target = targets.find((t) => t.userId === emp.id);
+      const achieved = await getAchievedAmount(emp.id, month, year);
+      return {
+        employee: emp,
+        targetAmount: target?.targetAmount ?? null,
+        achievedAmount: achieved,
+      };
+    })
+  );
+
+  return results;
+}
+
 export async function getMyTarget(month: number, year: number) {
   const session = await requireStaff();
   const userId = session.user.id;
@@ -96,7 +147,7 @@ export async function setSalesTargetAction(
   _prevState: unknown,
   formData: FormData
 ) {
-  const session = await requireAdmin();
+  const session = await requireStaff();
 
   const parsed = salesTargetSchema.safeParse({
     userId: formData.get("userId"),
@@ -107,6 +158,19 @@ export async function setSalesTargetAction(
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
+  }
+
+  const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role);
+  const isTeamScopedRole = TEAM_SCOPED_ROLES.includes(session.user.role);
+
+  if (!isAdmin) {
+    if (!isTeamScopedRole) {
+      return { error: "Unauthorized" };
+    }
+    const teamIds = await getTeamMemberIds(session.user.id);
+    if (!teamIds.includes(parsed.data.userId)) {
+      return { error: "You can only set targets for members of your own team" };
+    }
   }
 
   const target = await prisma.salesTarget.upsert({
@@ -130,5 +194,7 @@ export async function setSalesTargetAction(
   await logActivity(session.user.id, "SET_SALES_TARGET", target.id);
 
   revalidatePath("/dashboard/admin/sales-targets");
+  revalidatePath("/dashboard/sales");
+  revalidatePath("/dashboard/service");
   return { error: null };
 }

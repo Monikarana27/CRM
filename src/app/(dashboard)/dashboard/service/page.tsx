@@ -1,20 +1,41 @@
 import { auth } from "@/lib/auth/auth";
 import { StatWidget } from "@/components/widgets/stat-widget";
 import { DashboardHero } from "@/components/layout/dashboard-hero";
-import { getServiceStats } from "@/lib/stats/dashboard-stats";
+import { getServiceStats, getTeamServiceStats } from "@/lib/stats/dashboard-stats";
+import { getTeamSalesTargetsForMonth } from "@/actions/sales-targets/sales-target.actions";
+import { getTeamMemberIds } from "@/lib/hierarchy/team";
+import { SalesTargetsGrid } from "@/components/shared/sales-targets-grid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarClock, PhoneCall } from "lucide-react";
+import { CalendarClock, PhoneCall, Users } from "lucide-react";
+
+const SERVICE_TEAM_ROLES = ["SERVICE_TL", "SERVICE_MANAGER"];
 
 export default async function ServiceDashboardPage() {
   const session = await auth();
   const stats = await getServiceStats(session!.user.id);
 
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+  const monthLabel = now.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+
   const quickActions = [
     { label: "Assigned Profiles", href: "/dashboard/service/profiles", color: "bg-blue-500" },
-    { label: "Meetings", href: "/dashboard/admin/meetings", color: "bg-cyan-500" },
+    { label: "Meetings", href: "/dashboard/admin/meetings", color:"bg-cyan-500" },
     { label: "Welcome Calls", href: "/dashboard/service/welcome-calls", color: "bg-emerald-500" },
     { label: "Service Status", href: "/dashboard/admin/subscriptions", color: "bg-amber-500" },
   ];
+
+  const isTeamRole = SERVICE_TEAM_ROLES.includes(session!.user.role);
+  let teamIds: string[] = [];
+  let teamStats: Awaited<ReturnType<typeof getTeamServiceStats>> | null = null;
+  let teamTargets: Awaited<ReturnType<typeof getTeamSalesTargetsForMonth>> = [];
+
+  if (isTeamRole) {
+    teamIds = await getTeamMemberIds(session!.user.id);
+    teamStats = await getTeamServiceStats(teamIds);
+    teamTargets = await getTeamSalesTargetsForMonth(currentMonth, currentYear);
+  }
 
   return (
     <div className="space-y-6">
@@ -111,6 +132,56 @@ export default async function ServiceDashboardPage() {
           </a>
         ))}
       </div>
+
+      {isTeamRole && (
+        <div className="space-y-4 border-t pt-6">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">My Team</h2>
+          </div>
+
+          {teamIds.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              You don't have any team members assigned yet.
+            </p>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <StatWidget
+                  title="Team Assigned Profiles"
+                  lines={[{ label: "Assigned to Team", value: teamStats!.assignedProfiles }]}
+                />
+                <StatWidget
+                  title="Team Meetings Today"
+                  lines={[{ label: "Scheduled Today", value: teamStats!.meetingsToday }]}
+                />
+                <StatWidget
+                  title="Team Active Subscriptions"
+                  lines={[{ label: "Active", value: teamStats!.activeServiceCount }]}
+                />
+                <StatWidget
+                  title="Team Needs Attention"
+                  lines={[
+                    { label: "On Hold", value: teamStats!.onHoldProfiles },
+                    { label: "Expired", value: teamStats!.expiredServiceCount },
+                  ]}
+                />
+              </div>
+
+              <div>
+                <h3 className="mb-3 text-sm font-medium text-muted-foreground">
+                  Team Targets — {monthLabel}
+                </h3>
+                <SalesTargetsGrid
+                  targets={teamTargets}
+                  selectedMonth={currentMonth}
+                  selectedYear={currentYear}
+                />
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

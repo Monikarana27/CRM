@@ -10,8 +10,12 @@ const ROLE_LABEL: Record<Role, string> = {
   SUPER_ADMIN: "Super Admin",
   ADMIN: "Administration",
   SALES: "Sales Workspace",
+  SALES_TL: "Sales Team Lead",
+  SALES_MANAGER: "Sales Manager",
   PROFILE_CREATOR: "Profile Creator",
   SERVICE: "Service Workspace",
+  SERVICE_TL: "Service Team Lead",
+  SERVICE_MANAGER: "Service Manager",
   HR: "Human Resources",
 };
 
@@ -35,14 +39,14 @@ export function Sidebar({ role }: { role: Role }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+                "group relative flex items-center gap-3 rounded-lgpx-3 py-2 text-sm font-medium transition-all",
                 isActive
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
               )}
             >
               {isActive && (
-                <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-sidebar-primary" />
+                <span className="absolute left-0 top-1/2 h-4 w-0.5-translate-y-1/2 rounded-full bg-sidebar-primary" />
               )}
               <Icon
                 className={cn(
@@ -57,16 +61,7 @@ export function Sidebar({ role }: { role: Role }) {
           );
         })}
       </nav>
-      <div className="mt-auto p-4">
-        <div className="rounded-lg border border-sidebar-border bg-sidebar-accent/40 p-3">
-          <p className="text-xs font-medium text-sidebar-foreground/70">
-            Phase 1 - Foundation
-          </p>
-          <p className="mt-0.5 text-xs text-sidebar-foreground/40">
-            Core CRM modules launching soon
-          </p>
-        </div>
-      </div>
+
     </aside>
   );
 }

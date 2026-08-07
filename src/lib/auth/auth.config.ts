@@ -32,7 +32,7 @@ export const authConfig: NextAuthConfig = {
     session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub as string;
-        session.user.role = token.role as string;
+        session.user.role = token.role as Role;
         session.user.active = token.active as boolean;
         session.user.impersonating = token.impersonating as boolean | undefined;
         session.user.originalUserId = token.originalUserId as string | undefined;
