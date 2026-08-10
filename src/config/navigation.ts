@@ -14,7 +14,9 @@ import {
   PhoneCall,
   Target,
   MessageSquare,
+  Network,
 } from "lucide-react";
+
 import type { Role } from "@/lib/permissions/roles";
 import type { LucideIcon } from "lucide-react";
 
@@ -29,6 +31,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "Dashboard", href: "/dashboard/admin", icon: LayoutDashboard },
     { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
     { label: "Employees", href: "/dashboard/admin/employees", icon: Users },
+    { label: "Team Hierarchy", href: "/dashboard/admin/team-hierarchy", icon: Network },
     { label: "Profiles", href: "/dashboard/admin/profiles", icon: UserSquare2 },
     { label: "Leads", href: "/dashboard/admin/leads", icon: Contact },
     { label: "Approvals", href: "/dashboard/admin/profile-approvals", icon: ClipboardList },
@@ -40,6 +43,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "Dashboard", href: "/dashboard/admin", icon: LayoutDashboard },
     { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
     { label: "Employees", href: "/dashboard/admin/employees", icon: Users },
+    { label: "Team Hierarchy", href: "/dashboard/admin/team-hierarchy", icon: Network },
     { label: "Profiles", href: "/dashboard/admin/profiles", icon: UserSquare2 },
     { label: "Leads", href: "/dashboard/admin/leads", icon: Contact },
     { label: "Sales Targets", href: "/dashboard/admin/sales-targets", icon: Target },

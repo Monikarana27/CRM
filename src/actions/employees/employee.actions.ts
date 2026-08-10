@@ -8,6 +8,29 @@ import { generateTempPassword } from "@/lib/utils/generate-password";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+const ALL_ROLES = [
+  "SUPER_ADMIN",
+  "ADMIN",
+  "SALES",
+  "SALES_TL",
+  "SALES_MANAGER",
+  "PROFILE_CREATOR",
+  "SERVICE",
+  "SERVICE_TL",
+  "SERVICE_MANAGER",
+  "HR",
+] as const;
+type AnyRole = (typeof ALL_ROLES)[number];
+
+const MANAGER_CANDIDATE_ROLES = [
+  "SALES_TL",
+  "SALES_MANAGER",
+  "SERVICE_TL",
+  "SERVICE_MANAGER",
+  "ADMIN",
+  "SUPER_ADMIN",
+] as const;
+
 async function requireAdmin() {
   const session = await auth();
   if (!session?.user || !["ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {
@@ -39,6 +62,8 @@ export async function getEmployees() {
       role: true,
       active: true,
       createdAt: true,
+      managerId: true,
+      manager: { select: { id: true, name: true } },
       _count: {
         select: {
           assignedLeads: true,
@@ -61,7 +86,27 @@ export async function getEmployeeById(id: string) {
       department: true,
       role: true,
       active: true,
+      managerId: true,
     },
+  });
+}
+
+/**
+ * Returns active users who are structurally eligible to be someone's
+ * manager (i.e. hold a TL/Manager/Admin role). The employee-form
+ * component filters this list further client-side, based on the
+ * currently selected role, so only the correct "next level up" shows.
+ */
+export async function getEligibleManagerCandidates(excludeUserId?: string) {
+  await requireAdmin();
+  return prisma.user.findMany({
+    where: {
+      active: true,
+      role: { in: [...MANAGER_CANDIDATE_ROLES] },
+      ...(excludeUserId ? { NOT: { id: excludeUserId } } : {}),
+    },
+    select: { id: true, name: true, role: true },
+    orderBy: { name: "asc" },
   });
 }
 
@@ -78,6 +123,7 @@ export async function createEmployeeAction(
     password: formData.get("password"),
     role: formData.get("role"),
     department: formData.get("department"),
+    managerId: formData.get("managerId"),
     active: formData.get("active") === "on",
   });
 
@@ -106,6 +152,7 @@ export async function createEmployeeAction(
       password: hashedPassword,
       role: parsed.data.role,
       department: parsed.data.department || null,
+      managerId: parsed.data.managerId || null,
       active: parsed.data.active,
     },
   });
@@ -130,6 +177,7 @@ export async function updateEmployeeAction(
     password: formData.get("password"),
     role: formData.get("role"),
     department: formData.get("department"),
+    managerId: formData.get("managerId"),
     active: formData.get("active") === "on",
   });
 
@@ -144,12 +192,17 @@ export async function updateEmployeeAction(
     return { error: "Another employee already uses this email" };
   }
 
+  if (parsed.data.managerId === id) {
+    return { error: "An employee cannot report to themselves" };
+  }
+
   const updateData: {
     name: string;
     email: string;
     phone: string | null;
-    role: "SUPER_ADMIN" | "ADMIN" | "SALES" | "PROFILE_CREATOR" | "SERVICE" | "HR";
+    role: AnyRole;
     department: "SALES_EMP" | "PROFILE_EMP" | "SERVICE_EMP" | "HR_EMP" | null;
+    managerId: string | null;
     active: boolean;
     password?: string;
   } = {
@@ -158,6 +211,7 @@ export async function updateEmployeeAction(
     phone: parsed.data.phone || null,
     role: parsed.data.role,
     department: parsed.data.department || null,
+    managerId: parsed.data.managerId || null,
     active: parsed.data.active,
   };
 

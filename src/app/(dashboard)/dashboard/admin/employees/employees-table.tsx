@@ -22,6 +22,7 @@ type EmployeeRow = {
   role: string;
   active: boolean;
   createdAt: Date;
+  manager?: { id: string; name: string } | null;
   _count: {
     assignedLeads: number;
     assignedProfiles: number;
@@ -29,9 +30,29 @@ type EmployeeRow = {
 };
 
 const ROLE_STYLES: Record<string, string> = {
+  SUPER_ADMIN: "bg-violet-100 text-violet-700 border-violet-200",
   ADMIN: "bg-violet-100 text-violet-700 border-violet-200",
   SALES: "bg-blue-100 text-blue-700 border-blue-200",
+  SALES_TL: "bg-cyan-100 text-cyan-700 border-cyan-200",
+  SALES_MANAGER: "bg-indigo-100 text-indigo-700 border-indigo-200",
+  PROFILE_CREATOR: "bg-amber-100 text-amber-700 border-amber-200",
   SERVICE: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  SERVICE_TL: "bg-teal-100 text-teal-700 border-teal-200",
+  SERVICE_MANAGER: "bg-green-100 text-green-700 border-green-200",
+  HR: "bg-rose-100 text-rose-700 border-rose-200",
+};
+
+const ROLE_LABELS: Record<string, string> = {
+  SUPER_ADMIN: "Super Admin",
+  ADMIN: "Admin",
+  SALES: "Sales",
+  SALES_TL: "Sales Team Lead",
+  SALES_MANAGER: "Sales Manager",
+  PROFILE_CREATOR: "Profile Creator",
+  SERVICE: "Service",
+  SERVICE_TL: "Service Team Lead",
+  SERVICE_MANAGER: "Service Manager",
+  HR: "HR",
 };
 
 const DEPARTMENT_LABELS: Record<string, string> = {
@@ -52,11 +73,28 @@ export function EmployeesTable({ employees }: { employees: EmployeeRow[] }) {
   const columns: Column<EmployeeRow>[] = [
     { key: "name", header: "Name", sortable: true },
     {
+      key: "role",
+      header: "Role",
+      render: (row) => (
+        <Badge
+          variant="outline"
+          className={ROLE_STYLES[row.role] ?? "bg-gray-100 text-gray-700 border-gray-200"}
+        >
+          {ROLE_LABELS[row.role] ?? row.role}
+        </Badge>
+      ),
+    },
+    {
       key: "department",
       header: "Department",
       render: (row) => (row.department ? DEPARTMENT_LABELS[row.department] ?? row.department : "—"),
     },
-    { key: "phone", header: "Phone", render: (row) => row.phone || "—" },
+    {
+      key: "manager",
+      header: "Reports To",
+      render: (row) => row.manager?.name ?? "—",
+    },
+    { key: "phone", header: "Phone", render: (row) => row.phone ||"—" },
     { key: "email", header: "Email", sortable: true },
     {
       key: "createdAt",

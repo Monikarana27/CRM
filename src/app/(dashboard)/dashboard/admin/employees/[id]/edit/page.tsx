@@ -3,6 +3,7 @@ import { DashboardHero } from "@/components/layout/dashboard-hero";
 import { EmployeeForm } from "../../employee-form";
 import {
   getEmployeeById,
+  getEligibleManagerCandidates,
   updateEmployeeAction,
 } from "@/actions/employees/employee.actions";
 
@@ -18,6 +19,7 @@ export default async function EditEmployeePage({
     notFound();
   }
 
+  const managerCandidates = await getEligibleManagerCandidates(id);
   const boundAction = updateEmployeeAction.bind(null, id);
 
   return (
@@ -29,6 +31,7 @@ export default async function EditEmployeePage({
       <EmployeeForm
         mode="edit"
         defaultValues={employee}
+        managerCandidates={managerCandidates}
         action={boundAction}
       />
     </div>
