@@ -78,10 +78,12 @@ export function ProfilesTable({
   profiles,
   employees,
   canAssign = true,
+  basePath = "/dashboard/admin/profiles",
 }: {
   profiles: UnifiedProfileRow[];
   employees: Employee[];
   canAssign?: boolean;
+  basePath?: string;
 }) {
   const [genderFilter, setGenderFilter] = useState("ALL");
   const [religionFilter, setReligionFilter] = useState("ALL");
@@ -192,13 +194,13 @@ export function ProfilesTable({
       sortable: true,
       width: 90,
       render: (row) =>
-        row.profileId ? (
-          <Link href={`/dashboard/admin/profiles/${row.profileId}/edit`} className="font-medium text-primary hover:underline">
-            {row.profileCode}
-          </Link>
-        ) : (
-          <span className="text-sm text-muted-foreground">—</span>
-        ),
+  row.profileId ? (
+    <Link href={`${basePath}/${row.profileId}`} className="font-medium text-primary hover:underline">
+  {row.profileCode}
+</Link>
+  ) : (
+    <span className="text-sm text-muted-foreground">—</span>
+  ),
     },
     {
       key: "photo",
@@ -218,9 +220,9 @@ export function ProfilesTable({
       header: "Photos",
       render: (row) =>
         row.profileId ? (
-          <Link href={`/dashboard/service/profiles/${row.profileId}`} className="text-sm text-primary hover:underline">
-            Manage Photos
-          </Link>
+         <Link href={`${basePath}/${row.profileId}`} className="text-sm text-primary hover:underline">
+  Manage Photos
+</Link>
         ) : (
           <span className="text-sm text-muted-foreground">—</span>
         ),

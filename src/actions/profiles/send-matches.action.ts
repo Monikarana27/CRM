@@ -1,9 +1,10 @@
 "use server";
+
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
 import { sendProfileEmail } from "@/lib/email/send-profile-email";
 
-export async function sendMatchedProfilesAction(toEmail: string, profileIds: string[]) {
+export async function sendMatchedProfilesAction(clientProfileId: string, toEmail: string, profileIds: string[]) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
 
@@ -16,4 +17,19 @@ export async function sendMatchedProfilesAction(toEmail: string, profileIds: str
   await prisma.activityLog.create({
     data: { actorId: session.user.id, action: "SEND_MATCHED_PROFILES", entityType: "Profile", entityId: profileIds[0] },
   });
+
+  const subscription = await prisma.subscription.findFirst({
+    where: { profileId: clientProfileId, status: "ACTIVE" },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (subscription) {
+    await prisma.profileShare.createMany({
+      data: profileIds.map((sharedProfileId) => ({
+        subscriptionId: subscription.id,
+        sharedProfileId,
+        sharedById: session.user.id,
+      })),
+    });
+  }
 }

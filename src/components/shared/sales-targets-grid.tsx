@@ -15,15 +15,16 @@ type TargetData = {
   targetAmount: number | null;
   achievedAmount: number;
 };
-
 function TargetCard({
   data,
   month,
   year,
+  isImpersonating,
 }: {
   data: TargetData;
   month: number;
   year: number;
+  isImpersonating: boolean;
 }) {
   const [state, formAction, isPending] = useActionState(setSalesTargetAction, { error: null });
   const [editing, setEditing] = useState(!data.targetAmount);
@@ -55,7 +56,7 @@ function TargetCard({
           >
             {pct >= 100 ? "Achieved" : "In Progress"}
           </Badge>
-          <ViewAsButton userId={data.employee.id} />
+          {!isImpersonating && <ViewAsButton userId={data.employee.id} />}
         </div>
       </CardHeader>
       <CardContent>
@@ -123,10 +124,12 @@ export function SalesTargetsGrid({
   targets,
   selectedMonth,
   selectedYear,
+  isImpersonating,
 }: {
   targets: TargetData[];
   selectedMonth: number;
   selectedYear: number;
+  isImpersonating: boolean;
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -136,6 +139,7 @@ export function SalesTargetsGrid({
           data={data}
           month={selectedMonth}
           year={selectedYear}
+          isImpersonating={isImpersonating}
         />
       ))}
     </div>

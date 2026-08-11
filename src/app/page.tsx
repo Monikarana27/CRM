@@ -1,14 +1,6 @@
 ﻿import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/auth";
-
-const ROLE_ROUTE_MAP: Record<string, string> = {
-  SUPER_ADMIN: "admin",
-  ADMIN: "admin",
-  SALES: "sales",
-  SERVICE: "service",
-  PROFILE_CREATOR: "profile-creator",
-  HR: "hr",
-};
+import { ROLE_ROUTE_MAP } from "@/lib/permissions/role-routes";
 
 export default async function HomePage() {
   const session = await auth();

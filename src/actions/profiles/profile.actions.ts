@@ -203,7 +203,17 @@ export async function getProfileById(id: string) {
   await requireStaff();
   return prisma.profile.findUnique({
     where: { id },
-    include: { partnerPreference: true },
+    include: {
+      religion: true,
+      caste: true,
+      gotra: true,
+      motherTongueRef: true,
+      assignedTo: { select: { id: true, name: true } },
+      documents: { where: { type: "PHOTO" }, orderBy: { order: "asc" } },
+      partnerPreference: {
+        include: { religion: true, caste: true, motherTongueRef: true },
+      },
+    },
   });
 }
 

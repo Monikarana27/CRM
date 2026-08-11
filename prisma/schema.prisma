@@ -51,6 +51,7 @@ model User {
   assignedMeetings Meeting[]     @relation("AssignedMeetings")
   salesTargets     SalesTarget[]
   leadRemarks      LeadRemark[]
+  achievements Achievement[]
   attendance         Attendance[]
   leaveRequests      LeaveRequest[]
   performanceReviews PerformanceReview[]
@@ -62,12 +63,31 @@ model User {
   notificationsSent   Notification[]    @relation("NotificationActor")
   callLogsCreated      CallLog[] @relation("CallLogCreatedBy")
   sentProfileQueues ProfileQueue[] @relation("ProfileQueueSentBy")
+  profileSharesSent    ProfileShare[]
 
   @@index([role])
   @@index([email])
   @@index([managerId])
   @@map("users")
 }
+
+//   achievements Achievement[]
+
+model Achievement {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  month       Int
+  year        Int
+  amount      Float
+  note        String?
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, month, year])
+  @@map("achievements")
+}
+
 
 model ActivityLog {
   id         String   @id @default(cuid())
@@ -184,9 +204,11 @@ model Profile {
   familyBio             String?  @db.Text
   familyAnnualIncome    String?
 
-  // Meeting
+ // Meeting
   meetings          Meeting[] @relation("MeetingProfileOne")
   meetingsAsSecond  Meeting[] @relation("MeetingProfileTwo")
+
+  profileShares     ProfileShare[]
 
   photoUrl      String?
 
@@ -346,10 +368,16 @@ model Subscription {
   startDate     DateTime           @default(now())
   endDate       DateTime?
 
+  serviceStage  ServiceStage       @default(ACTIVE)
+  holdReason    HoldReason?
+  holdAt        DateTime?
+
   createdById   String?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   payments      Payment[]
+  profileShares ProfileShare[]
+  successStories SuccessStory[]
 
   @@index([status])
   @@index([profileId])
@@ -867,6 +895,87 @@ model MotherTongueRef {
   partnerPreferences PartnerPreference[]
 
   @@map("mother_tongues")
+}
+
+
+enum ServiceStage {
+  ACTIVE
+  ON_HOLD
+  MEETING_STAGE
+  FAMILY_DISCUSSION
+  MARRIAGE_FIXED
+  SUCCESS_CLOSED
+  EXPIRED
+}
+
+enum HoldReason {
+  FAMILY_DECISION_PENDING
+  ALREADY_TALKING_TO_SOMEONE
+  CAREER_FOCUS
+  TRAVEL
+  HEALTH
+  OTHER
+}
+
+enum InterestStatus {
+  SENT
+  ACCEPTED
+  REJECTED
+  PENDING
+}
+
+enum SuccessType {
+  ENGAGEMENT
+  MARRIAGE
+  SUCCESS_CLOSURE
+}
+
+// Added to existing Subscription model:
+//   serviceStage   ServiceStage @default(ACTIVE)
+//   holdReason     HoldReason?
+//   holdAt         DateTime?
+
+model ProfileShare {
+  id              String   @id @default(cuid())
+  subscriptionId  String
+  subscription    Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  sharedProfileId String
+  sharedProfile   Profile  @relation(fields: [sharedProfileId], references: [id])
+  sharedById      String?
+  sharedBy        User?    @relation(fields: [sharedById], references: [id])
+  shortlisted     Boolean  @default(false)
+  shortlistedAt   DateTime?
+  sharedAt        DateTime @default(now())
+
+  interests       Interest[]
+
+  @@index([subscriptionId])
+  @@index([sharedProfileId])
+  @@map("profile_shares")
+}
+
+model Interest {
+  id              String         @id @default(cuid())
+  profileShareId  String
+  profileShare    ProfileShare   @relation(fields: [profileShareId], references: [id], onDelete: Cascade)
+  status          InterestStatus @default(PENDING)
+  sentAt          DateTime       @default(now())
+  respondedAt     DateTime?
+
+  @@index([profileShareId])
+  @@map("interests")
+}
+
+model SuccessStory {
+  id             String      @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  type           SuccessType
+  closedAt       DateTime    @default(now())
+  notes          String?     @db.Text
+
+  @@index([subscriptionId])
+  @@map("success_stories")
 }
 
 

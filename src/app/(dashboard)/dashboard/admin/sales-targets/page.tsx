@@ -1,3 +1,4 @@
+import { auth } from "@/lib/auth/auth";
 import { getSalesTargetsForMonth } from "@/actions/sales-targets/sales-target.actions";
 import { DashboardHero } from "@/components/layout/dashboard-hero";
 import { SalesTargetsGrid } from "@/components/shared/sales-targets-grid";
@@ -7,6 +8,7 @@ export default async function SalesTargetsPage({
 }: {
   searchParams: Promise<{ month?: string; year?: string }>;
 }) {
+  const session = await auth();
   const { month, year } = await searchParams;
   const now = new Date();
   const selectedMonth = month ? parseInt(month) : now.getMonth() + 1;
@@ -29,6 +31,7 @@ export default async function SalesTargetsPage({
         targets={targets}
         selectedMonth={selectedMonth}
         selectedYear={selectedYear}
+        isImpersonating={!!session?.user?.impersonating}
       />
     </div>
   );

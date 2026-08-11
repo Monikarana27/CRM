@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/prisma";
+﻿import { prisma } from "@/lib/db/prisma";
 
 type IdFilter = string | { in: string[] };
 
@@ -186,7 +186,7 @@ export async function getSalesStats(userId: string) {
 
 /**
  * Same shape as getSalesStats, aggregated across an entire team
- * (an array of user IDs — typically the result of getTeamMemberIds).
+ * (an array of user IDs â€” typically the result of getTeamMemberIds).
  * Used on the Sales Manager / Sales TL dashboard's "My Team" section.
  */
 export async function getTeamSalesStats(teamIds: string[]) {
@@ -279,6 +279,8 @@ export async function getServiceStats(userId: string) {
     getTodaysActivityCount(userId),
   ]);
 
+  const leadFunnel = await getLeadFunnel({ assignedToId: userId });
+
   return {
     assignedProfiles,
     meetingsToday,
@@ -287,6 +289,8 @@ export async function getServiceStats(userId: string) {
     expiredServiceCount,
     upcomingMeetings,
     todaysActivityCount,
+    leads: leadFunnel,
+    myLeads: leadFunnel.totalLeads,
   };
 }
 
@@ -338,6 +342,8 @@ export async function getTeamServiceStats(teamIds: string[]) {
     getTodaysActivityCount(idFilter),
   ]);
 
+  const leadFunnel = await getLeadFunnel({ assignedToId: idFilter });
+
   return {
     assignedProfiles,
     meetingsToday,
@@ -346,6 +352,8 @@ export async function getTeamServiceStats(teamIds: string[]) {
     expiredServiceCount,
     upcomingMeetings,
     todaysActivityCount,
+    leads: leadFunnel,
+    teamLeads: leadFunnel.totalLeads,
   };
 }
 
@@ -363,4 +371,321 @@ export async function getRecentActivity(limit = 10) {
     entityType: log.entityType,
     createdAt: log.createdAt,
   }));
+}
+
+export async function getOrgSalesStats() {
+  const salesEmployees = await prisma.user.findMany({
+    where: { role: { in: ["SALES", "SALES_TL", "SALES_MANAGER"] }, active: true },
+    select: { id: true },
+  });
+  return getTeamSalesStats(salesEmployees.map((e) => e.id));
+}
+
+export async function getOrgServiceStats() {
+  const serviceEmployees = await prisma.user.findMany({
+    where: { role: { in: ["SERVICE", "SERVICE_TL", "SERVICE_MANAGER"] }, active: true },
+    select: { id: true },
+  });
+  return getTeamServiceStats(serviceEmployees.map((e) => e.id));
+}
+
+export async function getOrgNewLeadsBreakdown() {
+  const now = new Date();
+  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(now); todayEnd.setHours(23, 59, 59, 999);
+
+  const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+  const yesterdayEnd = new Date(todayEnd); yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
+
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const [today, yesterday, thisMonth] = await Promise.all([
+    prisma.lead.count({ where: { createdAt: { gte: todayStart, lte: todayEnd } } }),
+    prisma.lead.count({ where: { createdAt: { gte: yesterdayStart, lte: yesterdayEnd } } }),
+    prisma.lead.count({ where: { createdAt: { gte: monthStart } } }),
+  ]);
+
+  return { today, yesterday, thisMonth };
+}
+
+export async function getOrgLeadPipeline() {
+  const [newLead, contacted, interested, followUp, converted, lost, total] = await Promise.all([
+    prisma.lead.count({ where: { status: "NEW" } }),
+    prisma.lead.count({ where: { status: "CONTACTED" } }),
+    prisma.lead.count({ where: { status: "INTERESTED" } }),
+    prisma.lead.count({ where: { status: "PENDING" } }),
+    prisma.lead.count({ where: { status: "CONVERTED" } }),
+    prisma.lead.count({ where: { status: "NOT_INTERESTED" } }),
+    prisma.lead.count(),
+  ]);
+
+  return { newLead, contacted, interested, followUp, converted, lost, total };
+}
+
+export async function getDailySalesReport(date: Date) {
+  const dayStart = new Date(date); dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(date); dayEnd.setHours(23, 59, 59, 999);
+
+  const salesEmployees = await prisma.user.findMany({
+    where: { role: { in: ["SALES", "SALES_TL", "SALES_MANAGER"] }, active: true },
+    select: { id: true, name: true },
+  });
+
+  const rows = await Promise.all(
+    salesEmployees.map(async (emp) => {
+      const [leadsAssigned, remarkCalls, callLogCalls, meetingsScheduled, conversions, revenueResult] =
+        await Promise.all([
+          prisma.lead.count({ where: { assignedToId: emp.id, createdAt: { gte: dayStart, lte: dayEnd } } }),
+          prisma.leadRemark.count({ where: { actorId: emp.id, createdAt: { gte: dayStart, lte: dayEnd } } }),
+          prisma.callLog.count({ where: { createdById: emp.id, calledAt: { gte: dayStart, lte: dayEnd } } }),
+          prisma.meeting.count({ where: { assignedToId: emp.id, createdAt: { gte: dayStart, lte: dayEnd } } }),
+          prisma.lead.count({ where: { assignedToId: emp.id, status: "CONVERTED", updatedAt: { gte: dayStart, lte: dayEnd } } }),
+          prisma.payment.aggregate({
+            where: {
+              status: "PAID",
+              paidAt: { gte: dayStart, lte: dayEnd },
+              subscription: { profile: { assignedToId: emp.id } },
+            },
+            _sum: { amount: true },
+          }),
+        ]);
+
+      return {
+        employeeId: emp.id,
+        employeeName: emp.name,
+        leadsAssigned,
+        callsMade: remarkCalls + callLogCalls,
+        meetingsScheduled,
+        conversions,
+        revenue: revenueResult._sum.amount ?? 0,
+      };
+    })
+  );
+
+  return rows;
+}
+
+export async function getMonthlySalesReport(month: number, year: number) {
+  const monthStart = new Date(year, month - 1, 1);
+  const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
+
+  const salesEmployees = await prisma.user.findMany({
+    where: { role: { in: ["SALES", "SALES_TL", "SALES_MANAGER"] }, active: true },
+    select: { id: true, name: true },
+  });
+
+  const rows = await Promise.all(
+    salesEmployees.map(async (emp) => {
+      const [leadsAssigned, remarkCalls, callLogCalls, meetingsScheduled, conversions, revenueResult] =
+        await Promise.all([
+          prisma.lead.count({ where: { assignedToId: emp.id, createdAt: { gte: monthStart, lte: monthEnd } } }),
+          prisma.leadRemark.count({ where: { actorId: emp.id, createdAt: { gte: monthStart, lte: monthEnd } } }),
+          prisma.callLog.count({ where: { createdById: emp.id, calledAt: { gte: monthStart, lte: monthEnd } } }),
+          prisma.meeting.count({ where: { assignedToId: emp.id, createdAt: { gte: monthStart, lte: monthEnd } } }),
+          prisma.lead.count({ where: { assignedToId: emp.id, status: "CONVERTED", updatedAt: { gte: monthStart, lte: monthEnd } } }),
+          prisma.payment.aggregate({
+            where: {
+              status: "PAID",
+              paidAt: { gte: monthStart, lte: monthEnd },
+              subscription: { profile: { assignedToId: emp.id } },
+            },
+            _sum: { amount: true },
+          }),
+        ]);
+
+      const conversionPct = leadsAssigned > 0 ? (conversions / leadsAssigned) * 100 : 0;
+
+      return {
+        employeeId: emp.id,
+        employeeName: emp.name,
+        leadsAssigned,
+        callsMade: remarkCalls + callLogCalls,
+        meetingsScheduled,
+        conversions,
+        conversionPct,
+        revenue: revenueResult._sum.amount ?? 0,
+      };
+    })
+  );
+
+  return rows;
+}
+
+export async function getOrgLeadTrend(days = 7) {
+  const results = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const day = new Date();
+    day.setDate(day.getDate() - i);
+    const dayStart = new Date(day); dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(day); dayEnd.setHours(23, 59, 59, 999);
+
+    const [newLeads, converted] = await Promise.all([
+      prisma.lead.count({ where: { createdAt: { gte: dayStart, lte: dayEnd } } }),
+      prisma.lead.count({ where: { status: "CONVERTED", updatedAt: { gte: dayStart, lte: dayEnd } } }),
+    ]);
+
+    results.push({
+      date: dayStart.toLocaleDateString("en-IN", { day: "2-digit", month: "short" }),
+      newLeads,
+      converted,
+    });
+  }
+  return results;
+}
+
+export async function getOwnerSummary() {
+  const now = new Date();
+  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(now); todayEnd.setHours(23, 59, 59, 999);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const sevenDaysOut = new Date(now); sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
+
+  const [
+    newLeadsToday,
+    revenueToday,
+    activeClients,
+    onHoldClients,
+    meetingsToday,
+    profilesSharedToday,
+    pendingPayments,
+    expiringServices,
+    successStoriesThisMonth,
+  ] = await Promise.all([
+    prisma.lead.count({ where: { createdAt: { gte: todayStart, lte: todayEnd } } }),
+    prisma.payment.aggregate({
+      where: { status: "PAID", paidAt: { gte: todayStart, lte: todayEnd } },
+      _sum: { amount: true },
+    }),
+    prisma.subscription.count({ where: { status: "ACTIVE" } }),
+    prisma.subscription.count({ where: { status: "HOLD" } }),
+    prisma.meeting.count({ where: { scheduledAt: { gte: todayStart, lte: todayEnd } } }),
+    prisma.profileShare.count({ where: { sharedAt: { gte: todayStart, lte: todayEnd } } }),
+    prisma.payment.count({ where: { status: "PENDING" } }),
+    prisma.subscription.count({
+      where: { status: "ACTIVE", endDate: { gte: now, lte: sevenDaysOut } },
+    }),
+    prisma.successStory.count({ where: { closedAt: { gte: monthStart } } }),
+  ]);
+
+  return {
+    newLeadsToday,
+    revenueToday: revenueToday._sum.amount ?? 0,
+    activeClients,
+    onHoldClients,
+    meetingsToday,
+    profilesSharedToday,
+    pendingPayments,
+    expiringServices,
+    successStoriesThisMonth,
+  };
+}
+
+export async function getServiceOverview() {
+  const now = new Date();
+  const sevenDaysOut = new Date(now); sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
+  const thirtyDaysOut = new Date(now); thirtyDaysOut.setDate(thirtyDaysOut.getDate() + 30);
+
+  const [
+    active,
+    onHold,
+    meetingStage,
+    marriageFixed,
+    familyDiscussion,
+    successClosed,
+    expiringIn7,
+    expiringIn30,
+    expired,
+  ] = await Promise.all([
+    prisma.subscription.count({ where: { serviceStage: "ACTIVE" } }),
+    prisma.subscription.count({ where: { serviceStage: "ON_HOLD" } }),
+    prisma.subscription.count({ where: { serviceStage: "MEETING_STAGE" } }),
+    prisma.subscription.count({ where: { serviceStage: "MARRIAGE_FIXED" } }),
+    prisma.subscription.count({ where: { serviceStage: "FAMILY_DISCUSSION" } }),
+    prisma.subscription.count({ where: { serviceStage: "SUCCESS_CLOSED" } }),
+    prisma.subscription.count({
+      where: { status: "ACTIVE", endDate: { gte: now, lte: sevenDaysOut } },
+    }),
+    prisma.subscription.count({
+      where: { status: "ACTIVE", endDate: { gte: now, lte: thirtyDaysOut } },
+    }),
+    prisma.subscription.count({ where: { status: "EXPIRED" } }),
+  ]);
+
+  return {
+    stages: { active, onHold, meetingStage, marriageFixed, familyDiscussion, successClosed },
+    expiring: { in7Days: expiringIn7, in30Days: expiringIn30, expired },
+  };
+}
+
+export async function getDailyServiceReport(date: Date) {
+  const dayStart = new Date(date); dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(date); dayEnd.setHours(23, 59, 59, 999);
+
+  const serviceEmployees = await prisma.user.findMany({
+    where: { role: { in: ["SERVICE", "SERVICE_TL", "SERVICE_MANAGER"] }, active: true },
+    select: { id: true, name: true },
+  });
+
+  return Promise.all(
+    serviceEmployees.map(async (emp) => {
+      const [profilesShared, welcomeCalls, meetingsScheduled, meetingsCompleted, shortlists] =
+        await Promise.all([
+          prisma.profileShare.count({ where: { sharedById: emp.id, sharedAt: { gte: dayStart, lte: dayEnd } } }),
+          prisma.callLog.count({ where: { createdById: emp.id, calledAt: { gte: dayStart, lte: dayEnd } } }),
+          prisma.meeting.count({ where: { assignedToId: emp.id, createdAt: { gte: dayStart, lte: dayEnd } } }),
+          prisma.meeting.count({ where: { assignedToId: emp.id, status: "COMPLETED", scheduledAt: { gte: dayStart, lte: dayEnd } } }),
+          prisma.profileShare.count({ where: { sharedById: emp.id, shortlisted: true, shortlistedAt: { gte: dayStart, lte: dayEnd } } }),
+        ]);
+
+      return {
+        employeeId: emp.id,
+        employeeName: emp.name,
+        profilesShared,
+        welcomeCalls,
+        meetingsScheduled,
+        meetingsCompleted,
+        shortlists,
+      };
+    })
+  );
+}
+
+export async function getMonthlyServiceReport(month: number, year: number) {
+  const monthStart = new Date(year, month - 1, 1);
+  const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
+
+  const serviceEmployees = await prisma.user.findMany({
+    where: { role: { in: ["SERVICE", "SERVICE_TL", "SERVICE_MANAGER"] }, active: true },
+    select: { id: true, name: true },
+  });
+
+  return Promise.all(
+    serviceEmployees.map(async (emp) => {
+      const [profilesShared, welcomeCalls, meetingsConducted, shortlists, engagementCases, marriageClosures] =
+        await Promise.all([
+          prisma.profileShare.count({ where: { sharedById: emp.id, sharedAt: { gte: monthStart, lte: monthEnd } } }),
+          prisma.callLog.count({ where: { createdById: emp.id, calledAt: { gte: monthStart, lte: monthEnd } } }),
+          prisma.meeting.count({ where: { assignedToId: emp.id, status: "COMPLETED", scheduledAt: { gte: monthStart, lte: monthEnd } } }),
+          prisma.profileShare.count({ where: { sharedById: emp.id, shortlisted: true, shortlistedAt: { gte: monthStart, lte: monthEnd } } }),
+          prisma.successStory.count({
+            where: { type: "ENGAGEMENT", closedAt: { gte: monthStart, lte: monthEnd }, subscription: { profile: { assignedToId: emp.id } } },
+          }),
+          prisma.successStory.count({
+            where: { type: "MARRIAGE", closedAt: { gte: monthStart, lte: monthEnd }, subscription: { profile: { assignedToId: emp.id } } },
+          }),
+        ]);
+
+      return {
+        employeeId: emp.id,
+        employeeName: emp.name,
+        profilesShared,
+        welcomeCalls,
+        meetingsConducted,
+        shortlists,
+        engagementCases,
+        marriageClosures,
+      };
+    })
+  );
 }

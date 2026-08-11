@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth/auth";
+﻿import { auth } from "@/lib/auth/auth";
 import { StatWidget } from "@/components/widgets/stat-widget";
 import { DashboardHero } from "@/components/layout/dashboard-hero";
 import { getServiceStats, getTeamServiceStats } from "@/lib/stats/dashboard-stats";
@@ -69,6 +69,27 @@ export default async function ServiceDashboardPage() {
             { label: "On Hold", value: stats.onHoldProfiles },
             { label: "Expired", value: stats.expiredServiceCount },
           ]}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatWidget
+          title="My Leads"
+          lines={[{ label: "Total", value: stats.myLeads }]}
+          actionLabel="View Leads"
+          actionHref="/dashboard/admin/leads"
+        />
+        <StatWidget
+          title="New Leads"
+          lines={[{ label: "New", value: stats.leads.newLeads }]}
+        />
+        <StatWidget
+          title="Converted Leads"
+          lines={[{ label: "Converted", value: stats.leads.convertedLeads }]}
+        />
+        <StatWidget
+          title="Pending Follow-ups"
+          lines={[{ label: "Pending", value: stats.leads.pendingLeads }]}
         />
       </div>
 
@@ -170,12 +191,13 @@ export default async function ServiceDashboardPage() {
 
               <div>
                 <h3 className="mb-3 text-sm font-medium text-muted-foreground">
-                  Team Targets — {monthLabel}
+                  Team Targets {monthLabel}
                 </h3>
                 <SalesTargetsGrid
                   targets={teamTargets}
                   selectedMonth={currentMonth}
                   selectedYear={currentYear}
+                  isImpersonating={false}
                 />
               </div>
             </>

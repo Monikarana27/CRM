@@ -15,6 +15,8 @@ import {
   Target,
   MessageSquare,
   Network,
+  TrendingUp,
+  Stethoscope,
 } from "lucide-react";
 
 import type { Role } from "@/lib/permissions/roles";
@@ -29,6 +31,8 @@ export interface NavItem {
 export const NAV_CONFIG: Record<Role, NavItem[]> = {
   SUPER_ADMIN: [
     { label: "Dashboard", href: "/dashboard/admin", icon: LayoutDashboard },
+    { label: "Sales Dashboard", href: "/dashboard/admin/sales", icon: TrendingUp },
+    { label: "Service Dashboard", href: "/dashboard/admin/service", icon: Stethoscope },
     { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
     { label: "Employees", href: "/dashboard/admin/employees", icon: Users },
     { label: "Team Hierarchy", href: "/dashboard/admin/team-hierarchy", icon: Network },
@@ -41,6 +45,8 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
   ],
   ADMIN: [
     { label: "Dashboard", href: "/dashboard/admin", icon: LayoutDashboard },
+    { label: "Sales Dashboard", href: "/dashboard/admin/sales", icon: TrendingUp },
+    { label: "Service Dashboard", href: "/dashboard/admin/service", icon: Stethoscope },
     { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
     { label: "Employees", href: "/dashboard/admin/employees", icon: Users },
     { label: "Team Hierarchy", href: "/dashboard/admin/team-hierarchy", icon: Network },

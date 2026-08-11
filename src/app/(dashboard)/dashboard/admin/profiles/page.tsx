@@ -70,7 +70,8 @@ export default async function ProfilesPage({
         </Button>
       </div>
 
-      <ProfilesTable profiles={profiles} employees={employees} />
+      <ProfilesTable profiles={profiles} employees={employees} basePath="/dashboard/admin/profiles" />
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth/auth";
+﻿import { auth } from "@/lib/auth/auth";
 import { StatWidget } from "@/components/widgets/stat-widget";
 import { FunnelBreakdown } from "@/components/widgets/funnel-breakdown";
 import { ConversionRateCard } from "@/components/widgets/conversion-rate-card";
@@ -168,6 +168,23 @@ export default async function SalesDashboardPage() {
         />
       </div>
 
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <StatWidget
+          title="My Profiles"
+          lines={[{ label: "Total", value: stats.myProfiles }]}
+          actionLabel="View Profiles"
+          actionHref="/dashboard/admin/profiles"
+        />
+        <StatWidget
+          title="Assigned"
+          lines={[{ label: "Assigned", value: stats.profileAssignment.assigned }]}
+        />
+        <StatWidget
+          title="Reassigned"
+          lines={[{ label: "Reassigned", value: stats.profileAssignment.reassigned }]}
+        />
+      </div>
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <FunnelBreakdown
@@ -197,7 +214,7 @@ export default async function SalesDashboardPage() {
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
               <div className="text-primary-foreground">
                 <p className="text-xs uppercase tracking-wide text-primary-foreground/70">
-                  My Target — {monthLabel}
+                  My Target â€” {monthLabel}
                 </p>
                 <p className="font-display text-2xl font-bold">{session?.user?.name}</p>
               </div>
@@ -205,18 +222,18 @@ export default async function SalesDashboardPage() {
                 <div>
                   <p className="text-xs text-primary-foreground/70">Target</p>
                   <p className="font-semibold tabular-nums">
-                    ₹{myTarget.targetAmount.toLocaleString("en-IN")}
+                    â‚¹{myTarget.targetAmount.toLocaleString("en-IN")}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-primary-foreground/70">Achieved</p>
                   <p className="font-semibold tabular-nums">
-                    ₹{myTarget.achievedAmount.toLocaleString("en-IN")}
+                    â‚¹{myTarget.achievedAmount.toLocaleString("en-IN")}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-primary-foreground/70">Remaining</p>
-                  <p className="font-semibold tabular-nums">₹{remaining.toLocaleString("en-IN")}</p>
+                  <p className="font-semibold tabular-nums">â‚¹{remaining.toLocaleString("en-IN")}</p>
                 </div>
               </div>
               <div className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-accent text-accent">
@@ -272,13 +289,14 @@ export default async function SalesDashboardPage() {
 
               <div>
                 <h3 className="mb-3 text-sm font-medium text-muted-foreground">
-                  Team Targets — {monthLabel}
+                  Team Targets â€” {monthLabel}
                 </h3>
                 <SalesTargetsGrid
-                  targets={teamTargets}
-                  selectedMonth={currentMonth}
-                  selectedYear={currentYear}
-                />
+  targets={teamTargets}
+  selectedMonth={currentMonth}
+  selectedYear={currentYear}
+  isImpersonating={!!session!.user.impersonating}
+/>
               </div>
             </>
           )}

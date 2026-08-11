@@ -37,22 +37,17 @@ async function logActivity(actorId: string, action: string, entityId: string) {
 }
 
 /**
- * Achieved amount is auto-derived: sum of PAID payments for services
- * belonging to profiles currently assigned to this user, paid within
- * the given month/year.
+ * Achieved amount is now manually logged per employee via Achievement
+ * records (admin or the employee's TL/Manager adds an amount for a
+ * given month). This replaced the earlier auto-derived-from-Payment
+ * logic, since Payment->Subscription->Profile.assignedToId did not
+ * reliably map back to the Sales employee who closed the lead (Sales
+ * works Leads, Service works Profiles — the assignee on a Profile is
+ * usually Service, not Sales).
  */
 async function getAchievedAmount(userId: string, month: number, year: number) {
-  const monthStart = new Date(year, month - 1, 1);
-  const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
-
-  const result = await prisma.payment.aggregate({
-    where: {
-      status: "PAID",
-      paidAt: { gte: monthStart, lte: monthEnd },
-      subscription: {
-        profile: { assignedToId: userId },
-      },
-    },
+  const result = await prisma.achievement.aggregate({
+    where: { userId, month, year },
     _sum: { amount: true },
   });
 
@@ -192,6 +187,71 @@ export async function setSalesTargetAction(
   });
 
   await logActivity(session.user.id, "SET_SALES_TARGET", target.id);
+
+  revalidatePath("/dashboard/admin/sales-targets");
+  revalidatePath("/dashboard/sales");
+  revalidatePath("/dashboard/service");
+  return { error: null };
+}
+
+/**
+ * Manually log an achievement amount for an employee for a given
+ * month/year. Admin can log for anyone; TL/Manager only for their
+ * own team. Multiple entries in the same month are additive (e.g.
+ * logging two separate deals), not a single overwritten total.
+ */
+export async function addAchievementAction(
+  _prevState: unknown,
+  formData: FormData
+) {
+  const session = await requireStaff();
+
+  const userId = formData.get("userId") as string;
+  const month = Number(formData.get("month"));
+  const year = Number(formData.get("year"));
+  const amount = Number(formData.get("amount"));
+  const note = formData.get("note") as string | null;
+
+  if (!userId || !month || !year) {
+    return { error: "Missing required fields" };
+  }
+
+  if (!amount || amount <= 0) {
+    return { error: "Enter a valid amount" };
+  }
+
+  const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role);
+  const isTeamScopedRole = TEAM_SCOPED_ROLES.includes(session.user.role);
+
+  if (!isAdmin) {
+    if (!isTeamScopedRole) {
+      return { error: "Unauthorized" };
+    }
+    const teamIds = await getTeamMemberIds(session.user.id);
+    if (!teamIds.includes(userId)) {
+      return { error: "You can only add achievements for members of your own team" };
+    }
+  }
+
+  const achievement = await prisma.achievement.create({
+    data: {
+      userId,
+      month,
+      year,
+      amount,
+      note: note || null,
+      createdById: session.user.id,
+    },
+  });
+
+  await prisma.activityLog.create({
+    data: {
+      actorId: session.user.id,
+      action: "ADD_ACHIEVEMENT",
+      entityType: "Achievement",
+      entityId: achievement.id,
+    },
+  });
 
   revalidatePath("/dashboard/admin/sales-targets");
   revalidatePath("/dashboard/sales");
