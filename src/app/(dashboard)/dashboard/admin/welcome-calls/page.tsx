@@ -15,7 +15,7 @@ export default async function WelcomeCallsPage() {
   return (
     <div className="space-y-6">
       <DashboardHero
-        title="Welcome Calls"
+        title="Call History"
         subtitle={`${callLogs.length} calls logged · ${completionRate}% connected`}
       />
 

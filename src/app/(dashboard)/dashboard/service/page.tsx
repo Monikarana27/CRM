@@ -1,4 +1,5 @@
 ﻿import { auth } from "@/lib/auth/auth";
+import { ensureFollowUpNotifications } from "@/actions/leads/lead.actions";
 import { StatWidget } from "@/components/widgets/stat-widget";
 import { DashboardHero } from "@/components/layout/dashboard-hero";
 import { getServiceStats, getTeamServiceStats } from "@/lib/stats/dashboard-stats";
@@ -12,6 +13,7 @@ const SERVICE_TEAM_ROLES = ["SERVICE_TL", "SERVICE_MANAGER"];
 
 export default async function ServiceDashboardPage() {
   const session = await auth();
+  await ensureFollowUpNotifications();
   const stats = await getServiceStats(session!.user.id);
 
   const now = new Date();

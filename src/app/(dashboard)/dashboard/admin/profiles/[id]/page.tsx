@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { getProfileById } from "@/actions/profiles/profile.actions";
+import { SharedProfilesTable } from "@/components/shared/shared-profiles-table";
+import { getSharedProfilesForSubscription } from "@/actions/profile-shares/profile-share.actions";
+import { prisma } from "@/lib/db/prisma";
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   if (value === null || value === undefined || value === "") return null;
@@ -42,6 +45,14 @@ export default async function ViewProfilePage({
 
   const pp = profile.partnerPreference;
   const photos = profile.documents ?? [];
+
+  const activeSubscription = await prisma.subscription.findFirst({
+    where: { profileId: profile.id, status: "ACTIVE" },
+    orderBy: { createdAt: "desc" },
+  });
+  const sharedProfiles = activeSubscription
+    ? await getSharedProfilesForSubscription(activeSubscription.id)
+    : [];
 
   return (
     <div className="space-y-6">
@@ -189,6 +200,10 @@ export default async function ViewProfilePage({
           <Row label="Smoking" value={pp.smoking} />
           <Row label="About Desired Partner" value={pp.aboutDesiredPartner} />
         </Section>
+      )}
+
+      {activeSubscription && (
+        <SharedProfilesTable rows={sharedProfiles} clientName={profile.name} clientProfileId={profile.id} />
       )}
     </div>
   );

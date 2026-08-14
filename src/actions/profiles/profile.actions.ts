@@ -7,6 +7,7 @@ import { generateProfileCode } from "@/lib/utils/profile-code";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { extractProfileData, extractPartnerPreferenceData } from "@/lib/utils/profile-data";
+import { getNextSalesAssignee, createWelcomeCallEntry } from "@/lib/assignment/auto-assign";
 
 async function requireStaff() {
   const session = await auth();
@@ -54,6 +55,7 @@ export type ProfileStatusLabel =
 
 export type UnifiedProfileRow = {
   id: string; // profileId if it exists, else leadId — used as the table row key
+  remarks?: { remark: string; createdAt: Date }[];
   kind: "LEAD" | "QUEUE" | "PROFILE";
   profileId: string | null;
   leadId: string | null;
@@ -96,12 +98,14 @@ export async function getUnifiedProfiles(filter?: {
     include: {
       assignedTo: { select: { id: true, name: true } },
       religion: { select: { name: true } }, // NEW: need this to display religion below
+      remarks: { orderBy: { createdAt: "desc" }, take: 1, select: { remark: true, createdAt: true } },
     },
   });
 
   const profileRows: UnifiedProfileRow[] = profiles.map((p) => ({
     id: p.id,
     kind: "PROFILE",
+    remarks: p.remarks,
     profileId: p.id,
     leadId: null,
     queueId: null,
@@ -237,6 +241,7 @@ export async function createProfileAction(
   }
 
   const profileCode = await generateProfileCode(parsed.data.gender);
+  const autoAssignedToId = await getNextSalesAssignee();
 
   const profile = await prisma.profile.create({
     data: {
@@ -244,10 +249,17 @@ export async function createProfileAction(
       profileCode,
       createdById: session.user.id,
       partnerPreference: { create: ppData },
+      ...(autoAssignedToId
+        ? { assignedToId: autoAssignedToId, assignedAt: new Date(), status: "ASSIGNED" as const }
+        : {}),
     },
   });
 
   await logActivity(session.user.id, "CREATE_PROFILE", profile.id);
+
+  if (autoAssignedToId) {
+    await createWelcomeCallEntry({ profileId: profile.id, assignedToId: autoAssignedToId });
+  }
 
   revalidatePath("/dashboard/admin/profiles");
   redirect(`/dashboard/admin/profiles`);
@@ -320,6 +332,7 @@ export async function assignProfileAction(profileId: string, employeeId: string)
     wasAssigned ? "REASSIGN_PROFILE" : "ASSIGN_PROFILE",
     profileId
   );
+  await createWelcomeCallEntry({ profileId, assignedToId: employeeId });
 
   revalidatePath("/dashboard/admin/profiles");
 }
@@ -347,6 +360,7 @@ export async function bulkAssignProfilesAction(profileIds: string[], employeeId:
 
   for (const id of profileIds) {
     await logActivity(session.user.id, "BULK_ASSIGN_PROFILE", id);
+    await createWelcomeCallEntry({ profileId: id, assignedToId: employeeId });
   }
 
   revalidatePath("/dashboard/admin/profiles");

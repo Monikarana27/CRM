@@ -19,6 +19,7 @@ import { bulkAssignProfilesAction } from "@/actions/profiles/profile.actions";
 import { bulkAssignLeadsAction } from "@/actions/leads/lead.actions";
 import { sendToProfileCreationAction } from "@/actions/profile-queue/profile-queue.actions";
 import type { UnifiedProfileRow, ProfileStatusLabel } from "@/actions/profiles/profile.actions";
+import { InlineProfileRemarkEditor } from "@/components/shared/inline-profile-remark-editor";
 
 type Employee = { id: string; name: string };
 
@@ -163,7 +164,7 @@ export function ProfilesTable({
     });
   }
 
-  const columns: Column<UnifiedProfileRow>[] = [
+ const columns: Column<UnifiedProfileRow>[] = [
     ...(canAssign
       ? [
           {
@@ -194,13 +195,13 @@ export function ProfilesTable({
       sortable: true,
       width: 90,
       render: (row) =>
-  row.profileId ? (
-    <Link href={`${basePath}/${row.profileId}`} className="font-medium text-primary hover:underline">
-  {row.profileCode}
-</Link>
-  ) : (
-    <span className="text-sm text-muted-foreground">—</span>
-  ),
+        row.profileId ? (
+          <Link href={`${basePath}/${row.profileId}`} className="font-medium text-primary hover:underline">
+            {row.profileCode}
+          </Link>
+        ) : (
+          <span className="text-sm text-muted-foreground">—</span>
+        ),
     },
     {
       key: "photo",
@@ -216,13 +217,23 @@ export function ProfilesTable({
         ),
     },
     {
+      key: "remarks",
+      header: "Comments",
+      render: (row) =>
+        row.profileId ? (
+          <InlineProfileRemarkEditor profileId={row.profileId} latest={row.remarks?.[0] ?? null} />
+        ) : (
+          <span className="text-sm text-muted-foreground">—</span>
+        ),
+    },
+    {
       key: "manage",
       header: "Photos",
       render: (row) =>
         row.profileId ? (
-         <Link href={`${basePath}/${row.profileId}`} className="text-sm text-primary hover:underline">
-  Manage Photos
-</Link>
+          <Link href={`${basePath}/${row.profileId}`} className="text-sm text-primary hover:underline">
+            Manage Photos
+          </Link>
         ) : (
           <span className="text-sm text-muted-foreground">—</span>
         ),

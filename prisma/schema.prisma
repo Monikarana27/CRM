@@ -64,6 +64,10 @@ model User {
   callLogsCreated      CallLog[] @relation("CallLogCreatedBy")
   sentProfileQueues ProfileQueue[] @relation("ProfileQueueSentBy")
   profileSharesSent    ProfileShare[]
+  welcomeCalls         WelcomeCall[]
+  profileShareComments ProfileShareComment[]
+  profileRemarks       ProfileRemark[]
+  paymentOffersCreated PaymentOffer[]
 
   @@index([role])
   @@index([email])
@@ -210,6 +214,7 @@ model Profile {
 
   profileShares     ProfileShare[]
 
+
   photoUrl      String?
 
   // Status & assignment
@@ -228,9 +233,12 @@ model Profile {
   callLogs          CallLog[]
   queueEntry ProfileQueue?
   documents  ProfileDocument[]
+  paymentOffers  PaymentOffer[]
 
   approvalStatus ProfileApprovalStatus @default(PENDING_APPROVAL)
   approvalNotes  String?               @db.Text
+  welcomeCalls   WelcomeCall[]
+  remarks        ProfileRemark[]
 
   @@index([status])
   @@index([assignedToId])
@@ -325,6 +333,7 @@ model Lead {
 
   remarks      LeadRemark[]
   profileQueue ProfileQueue?
+  welcomeCalls WelcomeCall[]
 
   @@index([status])
   @@index([assignedToId])
@@ -351,6 +360,7 @@ model Plan {
   updatedAt     DateTime        @updatedAt
 
   subscriptions Subscription[]
+  paymentOffers PaymentOffer[]
 
   @@map("plans")
 }
@@ -413,6 +423,7 @@ model Payment {
   notes         String?       @db.Text
 
   paidAt        DateTime?
+  paymentOffer  PaymentOffer?
 
   createdById   String?
   createdAt     DateTime      @default(now())
@@ -800,6 +811,7 @@ enum NotificationType {
   REPLY
   IMPORTANT_ANNOUNCEMENT
   LEAD_FOLLOWUP
+  WELCOME_CALL_OVERDUE
 }
 
 model Notification {
@@ -946,13 +958,30 @@ model ProfileShare {
   shortlisted     Boolean  @default(false)
   shortlistedAt   DateTime?
   sharedAt        DateTime @default(now())
+  prospectStatus  InterestStatus @default(PENDING)
 
   interests       Interest[]
+  comments        ProfileShareComment[]
 
   @@index([subscriptionId])
   @@index([sharedProfileId])
   @@map("profile_shares")
 }
+
+model ProfileShareComment {
+  id             String       @id @default(cuid())
+  profileShareId String
+  profileShare   ProfileShare @relation(fields: [profileShareId], references: [id], onDelete: Cascade)
+  authorId       String
+  author         User         @relation(fields: [authorId], references: [id])
+  comment        String       @db.Text
+  createdAt      DateTime     @default(now())
+
+  @@index([profileShareId])
+  @@map("profile_share_comments")
+}
+
+
 
 model Interest {
   id              String         @id @default(cuid())
@@ -978,4 +1007,98 @@ model SuccessStory {
   @@map("success_stories")
 }
 
+enum WelcomeCallStatus {
+  PENDING
+  COMPLETED
+}
 
+model WelcomeCall {
+  id            String            @id @default(cuid())
+  leadId        String?
+  lead          Lead?             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  profileId     String?
+  profile       Profile?          @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  assignedToId  String
+  assignedTo    User              @relation(fields: [assignedToId], references: [id])
+  status        WelcomeCallStatus @default(PENDING)
+  attachmentUrl String?
+  completedAt   DateTime?
+  createdAt     DateTime          @default(now())
+
+  @@index([assignedToId])
+  @@index([status])
+  @@map("welcome_calls")
+}
+
+model ProfileRemark {
+  id        String   @id @default(cuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  actorId   String
+  actor     User     @relation(fields: [actorId], references: [id])
+  remark    String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([profileId])
+  @@map("profile_remarks")
+}
+
+enum PaymentOfferStatus {
+  DRAFT
+  ACTIVE
+  OPENED
+  CHECKOUT_STARTED
+  PAID
+  EXPIRED
+  CANCELLED
+  FAILED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+model PaymentOffer {
+  id            String             @id @default(cuid())
+  token         String             @unique
+
+  profileId     String
+  profile       Profile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  createdById   String
+  createdBy     User               @relation(fields: [createdById], references: [id])
+
+  planId        String
+  plan          Plan               @relation(fields: [planId], references: [id])
+
+  originalAmount Float
+  discountType   DiscountType
+  discountValue  Float
+  finalAmount    Float
+  currency       String            @default("INR")
+
+  status        PaymentOfferStatus @default(ACTIVE)
+  expiresAt     DateTime
+
+  openCount        Int      @default(0)
+  firstOpenedAt    DateTime?
+  lastOpenedAt     DateTime?
+  checkoutStartedAt DateTime?
+  paidAt           DateTime?
+
+  paymentGateway        String?
+  paymentOrderId        String?
+  paymentTransactionId  String?
+
+  paymentId     String?  @unique
+  payment       Payment? @relation(fields: [paymentId], references: [id])
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([token])
+  @@index([profileId])
+  @@index([status])
+  @@map("payment_offers")
+}

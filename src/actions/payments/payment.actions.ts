@@ -6,6 +6,7 @@ import { can } from "@/lib/permissions/can";
 import { paymentSchema } from "@/lib/validations/payment.schema";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { reassignProfileToServiceOnPayment } from "@/lib/assignment/auto-assign";
 
 async function requirePayments(minAction: "VIEW" | "CREATE" | "EDIT" | "FULL") {
   const session = await auth();
@@ -85,6 +86,16 @@ export async function createPaymentAction(
 
   await logActivity(session.user.id, "CREATE_PAYMENT", payment.id);
 
+  if (parsed.data.status === "PAID") {
+    const sub = await prisma.subscription.findUnique({
+      where: { id: parsed.data.subscriptionId },
+      select: { profileId: true },
+    });
+    if (sub) {
+      await reassignProfileToServiceOnPayment(sub.profileId, session.user.id);
+    }
+  }
+
   revalidatePath("/dashboard/admin/payments");
   redirect("/dashboard/admin/payments");
 }
@@ -104,6 +115,16 @@ export async function updatePaymentStatusAction(
   });
 
   await logActivity(session.user.id, `PAYMENT_STATUS_${status}`, paymentId);
+
+  if (status === "PAID") {
+    const payment = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      select: { subscription: { select: { profileId: true } } },
+    });
+    if (payment?.subscription) {
+      await reassignProfileToServiceOnPayment(payment.subscription.profileId, session.user.id);
+    }
+  }
 
   revalidatePath("/dashboard/admin/payments");
 }

@@ -689,3 +689,65 @@ export async function getMonthlyServiceReport(month: number, year: number) {
     })
   );
 }
+
+export async function getSalesNeedsAttention() {
+  const now = new Date();
+  const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
+  const threeDaysAgo = new Date(now); threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+  const twoDaysAgo = new Date(now); twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+  const [unassignedLeads, overdueFollowUps, stalePendingApproval, overdueWelcomeCalls] = await Promise.all([
+    prisma.lead.count({ where: { assignedToId: null } }),
+    prisma.lead.count({
+      where: {
+        followUpDate: { lt: startOfToday },
+        status: { notIn: ["CONVERTED", "NOT_INTERESTED", "CLOSED"] },
+      },
+    }),
+    prisma.profile.count({
+      where: { approvalStatus: "PENDING_APPROVAL", createdAt: { lte: threeDaysAgo } },
+    }),
+    prisma.welcomeCall.count({
+      where: {
+        status: "PENDING",
+        createdAt: { lte: twoDaysAgo },
+        assignedTo: { role: { in: ["SALES", "SALES_TL", "SALES_MANAGER"] } },
+      },
+    }),
+  ]);
+
+  return [
+    { label: "Unassigned Leads", count: unassignedLeads, href: "/dashboard/admin/leads", tone: "warning" as const },
+    { label: "Overdue Follow-ups", count: overdueFollowUps, href: "/dashboard/admin/leads", tone: "danger" as const },
+    { label: "Profiles Pending Approval (3+ days)", count: stalePendingApproval, href: "/dashboard/admin/profile-approvals", tone: "warning" as const },
+    { label: "Welcome Calls Overdue", count: overdueWelcomeCalls, href: "/dashboard/welcome-calls?department=SALES&status=PENDING", tone: "warning" as const },
+  ];
+}
+
+export async function getServiceNeedsAttention() {
+  const now = new Date();
+  const sevenDaysOut = new Date(now); sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
+  const twoDaysAgo = new Date(now); twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+  const [expiringSoon, onHold, pendingPayments, overdueWelcomeCalls] = await Promise.all([
+    prisma.subscription.count({
+      where: { status: "ACTIVE", endDate: { gte: now, lte: sevenDaysOut } },
+    }),
+    prisma.subscription.count({ where: { status: "HOLD" } }),
+    prisma.payment.count({ where: { status: "PENDING" } }),
+    prisma.welcomeCall.count({
+      where: {
+        status: "PENDING",
+        createdAt: { lte: twoDaysAgo },
+        assignedTo: { role: { in: ["SERVICE", "SERVICE_TL", "SERVICE_MANAGER"] } },
+      },
+    }),
+  ]);
+
+  return [
+    { label: "Expiring in 7 Days", count: expiringSoon, href: "/dashboard/admin/subscriptions/expiring", tone: "danger" as const },
+    { label: "Clients On Hold", count: onHold, href: "/dashboard/admin/subscriptions", tone: "warning" as const },
+    { label: "Pending Payments", count: pendingPayments, href: "/dashboard/admin/payments", tone: "warning" as const },
+    { label: "Welcome Calls Overdue", count: overdueWelcomeCalls, href: "/dashboard/welcome-calls?department=SERVICE&status=PENDING", tone: "warning" as const },
+  ];
+}

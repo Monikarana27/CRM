@@ -15,6 +15,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { AssignAction } from "@/components/shared/assign-action";
+import { InlineRemarkEditor } from "@/components/shared/inline-remark-editor";
 import {
   assignLeadAction,
   unassignLeadAction,
@@ -231,27 +232,8 @@ export function LeadsTable({
     },
     {
       key: "notes",
-      header: "Notes",
-      render: (row) => {
-        const latest = row.remarks[0];
-        if (!latest) {
-          return <span className="text-sm text-muted-foreground italic">No remarks yet</span>;
-        }
-        return (
-          <Link
-            href={`${canAssign ? "/dashboard/admin/leads" : "/dashboard/sales/leads"}/${row.id}`}
-            className="block max-w-[200px] hover:underline"
-            title={latest.remark ?? latest.outcome}
-          >
-            <span className={`text-xs font-medium ${OUTCOME_STYLES[latest.outcome] ?? "text-muted-foreground"}`}>
-              {latest.outcome.replace(/_/g, " ")}
-            </span>
-            {latest.remark && (
-              <p className="text-sm text-muted-foreground truncate">{latest.remark}</p>
-            )}
-          </Link>
-        );
-      },
+      header: "Comments",
+      render: (row) => <InlineRemarkEditor leadId={row.id} latest={row.remarks[0]} />,
     },
     {
       key: "followUpDate",

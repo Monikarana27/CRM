@@ -10,7 +10,7 @@ export default async function ServiceProfilesPage() {
   return (
     <div className="space-y-6">
       <DashboardHero title="Assigned Active Profiles" subtitle="Approved profiles assigned to you." />
-      <ProfilesTable profiles={profiles} employees={[]} canAssign={false} basePath="/dashboard/service/profiles" />
+      <ProfilesTable profiles={profiles} employees={[]} canAssign={false} basePath="/dashboard/admin/profiles" />
     </div>
   );
 }

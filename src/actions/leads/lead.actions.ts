@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth/auth";
 import { leadSchema } from "@/lib/validations/lead.schema";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getNextSalesAssignee, createWelcomeCallEntry } from "@/lib/assignment/auto-assign";
 
 async function requireStaff() {
   const session = await auth();
@@ -64,32 +65,66 @@ export async function getFollowUpLeads() {
 
 export async function ensureFollowUpNotifications() {
   const session = await requireStaff();
-  if (session.user.role !== "SALES") return;
 
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
-  const dueLeads = await prisma.lead.findMany({
+  if (session.user.role === "SALES") {
+    const dueLeads = await prisma.lead.findMany({
+      where: {
+        assignedToId: session.user.id,
+        followUpDate: { lte: new Date() },
+      },
+      select: { id: true, name: true },
+    });
+
+    for (const lead of dueLeads) {
+      const content = `Follow-up due: ${lead.name}`;
+      const existing = await prisma.notification.findFirst({
+        where: {
+          recipientId: session.user.id,
+          type: "LEAD_FOLLOWUP",
+          content,
+          createdAt: { gte: startOfDay },
+        },
+      });
+      if (!existing) {
+        await prisma.notification.create({
+          data: { recipientId: session.user.id, type: "LEAD_FOLLOWUP", content },
+        });
+      }
+    }
+  }
+
+  const twoDaysAgo = new Date();
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+  const overdueWelcomeCalls = await prisma.welcomeCall.findMany({
     where: {
       assignedToId: session.user.id,
-      followUpDate: { lte: new Date() },
+      status: "PENDING",
+      createdAt: { lte: twoDaysAgo },
     },
-    select: { id: true, name: true },
+    include: {
+      lead: { select: { name: true } },
+      profile: { select: { name: true } },
+    },
   });
 
-  for (const lead of dueLeads) {
-    const content = `Follow-up due: ${lead.name}`;
+  for (const wc of overdueWelcomeCalls) {
+    const contactName = wc.lead?.name ?? wc.profile?.name ?? "Unknown";
+    const content = `Welcome call pending 2+ days: ${contactName}`;
     const existing = await prisma.notification.findFirst({
       where: {
         recipientId: session.user.id,
-        type: "LEAD_FOLLOWUP",
+        type: "WELCOME_CALL_OVERDUE",
         content,
         createdAt: { gte: startOfDay },
       },
     });
     if (!existing) {
       await prisma.notification.create({
-        data: { recipientId: session.user.id, type: "LEAD_FOLLOWUP", content },
+        data: { recipientId: session.user.id, type: "WELCOME_CALL_OVERDUE", content },
       });
     }
   }
@@ -133,6 +168,8 @@ export async function createLeadAction(
     return { error: "A lead with this phone number already exists." };
   }
 
+  const autoAssignedToId = await getNextSalesAssignee();
+
   const lead = await prisma.lead.create({
     data: {
       name: parsed.data.name,
@@ -143,8 +180,21 @@ export async function createLeadAction(
       notes: parsed.data.notes || null,
       followUpDate: parsed.data.followUpDate ? new Date(parsed.data.followUpDate) : null,
       createdById: session.user.id,
+      assignedToId: autoAssignedToId,
     },
   });
+
+  if (autoAssignedToId) {
+    await prisma.leadAssignmentHistory.create({
+      data: {
+        leadId: lead.id,
+        fromEmployeeId: null,
+        toEmployeeId: autoAssignedToId,
+        changedById: session.user.id,
+      },
+    });
+    await createWelcomeCallEntry({ leadId: lead.id, assignedToId: autoAssignedToId });
+  }
 
   await logActivity(session.user.id, "CREATE_LEAD", lead.id);
 
@@ -225,6 +275,7 @@ export async function assignLeadAction(leadId: string, employeeId: string) {
   });
 
   await logActivity(session.user.id, "ASSIGN_LEAD", leadId);
+  await createWelcomeCallEntry({ leadId, assignedToId: employeeId });
 
   revalidatePath("/dashboard/admin/leads");
 }
@@ -286,6 +337,7 @@ export async function bulkAssignLeadsAction(leadIds: string[], employeeId: strin
 
   for (const leadId of leadIds) {
     await logActivity(session.user.id, "BULK_ASSIGN_LEAD", leadId);
+    await createWelcomeCallEntry({ leadId, assignedToId: employeeId });
   }
 
   revalidatePath("/dashboard/admin/leads");
@@ -303,4 +355,3 @@ export async function getLeadAssignmentHistory(leadId: string) {
     },
   });
 }
-

@@ -1,5 +1,6 @@
 import { DashboardHero } from "@/components/layout/dashboard-hero";
 import { KpiTile } from "@/components/widgets/kpi-tile";
+import { getServiceNeedsAttention } from "@/lib/stats/dashboard-stats";
 import { ServicePerformanceTable } from "@/components/shared/service-performance-table";
 import {
   getOwnerSummary,
@@ -12,6 +13,7 @@ import {
   Send, CreditCard, Clock, Trophy, UserCheck, Handshake,
   Heart, Users2, Ban, AlertTriangle,
 } from "lucide-react";
+import { NeedsAttentionWidget } from "@/components/widgets/needs-attention-widget";
 
 export default async function AdminServiceDashboardPage() {
   const now = new Date();
@@ -21,13 +23,14 @@ export default async function AdminServiceDashboardPage() {
   const overview = await getServiceOverview();
   const dailyReport = await getDailyServiceReport(now);
   const monthlyReport = await getMonthlyServiceReport(now.getMonth() + 1, now.getFullYear());
-
+  const needsAttention = await getServiceNeedsAttention();
   return (
     <div className="space-y-6">
       <DashboardHero
         title="Service Department — Overview"
         subtitle="Org-wide client servicing, matchmaking activity, and success outcomes."
       />
+      <NeedsAttentionWidget items={needsAttention} />
 
       <div>
         <h3 className="mb-2 text-sm font-semibold text-muted-foreground">MANAGEMENT SUMMARY</h3>

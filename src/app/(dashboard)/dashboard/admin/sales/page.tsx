@@ -1,5 +1,6 @@
 ﻿import { DashboardHero } from "@/components/layout/dashboard-hero";
 import { StatWidget } from "@/components/widgets/stat-widget";
+import { getSalesNeedsAttention } from "@/lib/stats/dashboard-stats";
 import { FunnelBreakdown } from "@/components/widgets/funnel-breakdown";
 import { ConversionRateCard } from "@/components/widgets/conversion-rate-card";
 import { LeadTrendChart } from "@/components/widgets/lead-trend-chart";
@@ -12,6 +13,7 @@ import {
   getDailySalesReport,
   getMonthlySalesReport,
 } from "@/lib/stats/dashboard-stats";
+import { NeedsAttentionWidget } from "@/components/widgets/needs-attention-widget";
 
 export default async function AdminSalesDashboardPage() {
   const now = new Date();
@@ -26,7 +28,7 @@ export default async function AdminSalesDashboardPage() {
   const trendData = await getOrgLeadTrend(7);
   const dailyReport = await getDailySalesReport(now);
   const monthlyReport = await getMonthlySalesReport(now.getMonth() + 1, now.getFullYear());
-
+  const needsAttention = await getSalesNeedsAttention();
   const funnelRows = [
     { label: "New Lead", value: pipeline.newLead, total: pipeline.total, colorClass: "border-blue-400 bg-blue-50", barColorClass: "bg-blue-500" },
     { label: "Contacted", value: pipeline.contacted, total: pipeline.total, colorClass: "border-cyan-400 bg-cyan-50", barColorClass: "bg-cyan-500" },
@@ -50,6 +52,7 @@ export default async function AdminSalesDashboardPage() {
         title="Sales Department — Overview"
         subtitle="Org-wide lead pipeline, conversions, and follow-ups across all sales staff."
       />
+      <NeedsAttentionWidget items={needsAttention} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatWidget title="New Leads Today" lines={[{ label: "Today", value: newLeadsBreakdown.today }]} />
