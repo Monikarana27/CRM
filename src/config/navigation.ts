@@ -17,6 +17,7 @@ import {
   Network,
   TrendingUp,
   Stethoscope,
+  Tag,
 } from "lucide-react";
 
 import type { Role } from "@/lib/permissions/roles";
@@ -43,6 +44,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "Service Overview", href: "/dashboard/admin/service-overview", icon: HeartHandshake },
     { label: "Expiring Soon", href: "/dashboard/admin/subscriptions/expiring", icon: CalendarClock },
     { label: "Welcome Calls", href: "/dashboard/welcome-calls", icon: PhoneCall },
+    { label: "Discounts", href: "/dashboard/discounts", icon: Tag },
   ],
   ADMIN: [
     { label: "Dashboard", href: "/dashboard/admin", icon: LayoutDashboard },
@@ -67,6 +69,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "Profile Queue", href: "/dashboard/admin/profile-queue", icon: ClipboardList },
     { label: "Expiring Soon", href: "/dashboard/admin/subscriptions/expiring", icon: CalendarClock },
     { label: "Welcome Calls", href: "/dashboard/welcome-calls", icon: PhoneCall },
+    { label: "Discounts", href: "/dashboard/discounts", icon: Tag },
   ],
   SALES: [
     { label: "Dashboard", href: "/dashboard/sales", icon: LayoutDashboard },
@@ -74,6 +77,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "My Leads", href: "/dashboard/sales/leads", icon: Handshake },
     { label: "Follow-ups", href: "/dashboard/admin/meetings", icon: CalendarClock },
     { label: "Welcome Calls", href: "/dashboard/welcome-calls", icon: PhoneCall },
+    { label: "Discounts", href: "/dashboard/discounts", icon: Tag },
   ],
   SALES_TL: [
     { label: "Dashboard", href: "/dashboard/sales", icon: LayoutDashboard },
@@ -81,6 +85,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "My Leads", href: "/dashboard/sales/leads", icon: Handshake },
     { label: "Follow-ups", href: "/dashboard/admin/meetings", icon: CalendarClock },
     { label: "Welcome Calls", href: "/dashboard/welcome-calls", icon: PhoneCall },
+    { label: "Discounts", href: "/dashboard/discounts", icon: Tag },
   ],
   SALES_MANAGER: [
     { label: "Dashboard", href: "/dashboard/sales", icon: LayoutDashboard },
@@ -88,6 +93,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "My Leads", href: "/dashboard/sales/leads", icon: Handshake },
     { label: "Follow-ups", href: "/dashboard/admin/meetings", icon: CalendarClock },
     { label: "Welcome Calls", href: "/dashboard/welcome-calls", icon: PhoneCall },
+    { label: "Discounts", href: "/dashboard/discounts", icon: Tag },
   ],
   PROFILE_CREATOR: [
     { label: "Dashboard", href: "/dashboard/profile-creator", icon: LayoutDashboard },
@@ -101,6 +107,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "Call History", href: "/dashboard/service/welcome-calls", icon: PhoneCall },
     { label: "Service Status", href: "/dashboard/service/status", icon: Activity },
     { label: "Welcome Calls", href: "/dashboard/welcome-calls", icon: PhoneCall },
+    { label: "Discounts", href: "/dashboard/discounts", icon: Tag },
   ],
   SERVICE_TL: [
     { label: "Dashboard", href: "/dashboard/service", icon: LayoutDashboard },
@@ -110,6 +117,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "Welcome Calls", href: "/dashboard/service/welcome-calls", icon: PhoneCall },
     { label: "Service Status", href: "/dashboard/service/status", icon: Activity },
     { label: "Welcome Calls", href: "/dashboard/welcome-calls", icon: PhoneCall },
+    { label: "Discounts", href: "/dashboard/discounts", icon: Tag }
   ],
   SERVICE_MANAGER: [
     { label: "Dashboard", href: "/dashboard/service", icon: LayoutDashboard },
@@ -119,6 +127,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "Welcome Calls", href: "/dashboard/service/welcome-calls", icon: PhoneCall },
     { label: "Service Status", href: "/dashboard/service/status", icon: Activity },
     { label: "Welcome Calls", href: "/dashboard/welcome-calls", icon: PhoneCall },
+    { label: "Discounts", href: "/dashboard/discounts", icon: Tag },
   ],
   HR: [
     { label: "Dashboard", href: "/dashboard/hr", icon: LayoutDashboard },

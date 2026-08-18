@@ -12,6 +12,7 @@ export const ROUTE_ACCESS: Record<string, Role[]> = {
   "/dashboard/hr": ["SUPER_ADMIN", "HR"],
   "/dashboard/workspace": ["SUPER_ADMIN", "ADMIN", "SALES", "SALES_TL", "SALES_MANAGER", "SERVICE", "SERVICE_TL", "SERVICE_MANAGER", "PROFILE_CREATOR", "HR"],
   "/dashboard/welcome-calls": ["SUPER_ADMIN", "ADMIN", "SALES", "SALES_TL", "SALES_MANAGER", "SERVICE", "SERVICE_TL", "SERVICE_MANAGER"],
+  "/dashboard/discounts": ["SUPER_ADMIN", "ADMIN", "SALES", "SALES_TL", "SALES_MANAGER", "SERVICE", "SERVICE_TL", "SERVICE_MANAGER"],
 };
 
 export function canAccessRoute(role: Role, path: string): boolean {

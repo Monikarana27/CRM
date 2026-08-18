@@ -25,4 +25,5 @@ next-env.d.ts
 
 # IDE
 .vscode/*
-!.vscode/extensions.json.env.production
+!.vscode/extensions.json
+.env.production

@@ -9,6 +9,7 @@ import { getProfileById } from "@/actions/profiles/profile.actions";
 import { SharedProfilesTable } from "@/components/shared/shared-profiles-table";
 import { getSharedProfilesForSubscription } from "@/actions/profile-shares/profile-share.actions";
 import { prisma } from "@/lib/db/prisma";
+import { CreateOfferDialog } from "@/components/shared/create-offer-dialog";
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   if (value === null || value === undefined || value === "") return null;
@@ -53,6 +54,7 @@ export default async function ViewProfilePage({
   const sharedProfiles = activeSubscription
     ? await getSharedProfilesForSubscription(activeSubscription.id)
     : [];
+  const plans = await prisma.plan.findMany({ where: { active: true }, orderBy: { price: "asc" } });
 
   return (
     <div className="space-y-6">
@@ -61,12 +63,15 @@ export default async function ViewProfilePage({
           title={profile.name}
           subtitle={`Profile ID: ${profile.profileCode}`}
         />
-        <Button asChild>
-          <Link href={`/dashboard/admin/profiles/${profile.id}/edit`}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit Profile
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <CreateOfferDialog profileId={profile.id} plans={plans} />
+          <Button asChild>
+            <Link href={`/dashboard/admin/profiles/${profile.id}/edit`}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit Profile
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
