@@ -1,6 +1,7 @@
 "use server";
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { revalidatePath } from "next/cache";
 
 const SUPER_ADMIN_ONLY_KEYS = ["security_two_factor", "workflow_auto_approve"];
@@ -26,7 +27,7 @@ export async function updateSettingAction(key: string, value: string) {
   });
 
   await prisma.activityLog.create({
-    data: { actorId: session.user.id, action: "UPDATE_SETTING", entityType: "SystemSetting", entityId: key },
+    data: { actorId: await getActingUserId(session), action: "UPDATE_SETTING", entityType: "SystemSetting", entityId: key },
   });
 
   revalidatePath("/dashboard/admin/settings");

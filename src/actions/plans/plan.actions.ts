@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { planSchema } from "@/lib/validations/plan.schema";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -59,7 +60,7 @@ export async function createPlanAction(
 
   const plan = await prisma.plan.create({ data: parsed.data });
 
-  await logActivity(session.user.id, "CREATE_PLAN", plan.id);
+  await logActivity(await getActingUserId(session), "CREATE_PLAN", plan.id);
 
   revalidatePath("/dashboard/admin/plans");
   redirect("/dashboard/admin/plans");
@@ -86,7 +87,7 @@ export async function updatePlanAction(
 
   await prisma.plan.update({ where: { id }, data: parsed.data });
 
-  await logActivity(session.user.id, "UPDATE_PLAN", id);
+  await logActivity(await getActingUserId(session), "UPDATE_PLAN", id);
 
   revalidatePath("/dashboard/admin/plans");
   redirect("/dashboard/admin/plans");
@@ -95,6 +96,6 @@ export async function updatePlanAction(
 export async function togglePlanActiveAction(id: string, active: boolean) {
   const session = await requireAdmin();
   await prisma.plan.update({ where: { id }, data: { active } });
-  await logActivity(session.user.id, active ? "ACTIVATE_PLAN" : "DEACTIVATE_PLAN", id);
+  await logActivity(await getActingUserId(session), active ? "ACTIVATE_PLAN" : "DEACTIVATE_PLAN", id);
   revalidatePath("/dashboard/admin/plans");
 }

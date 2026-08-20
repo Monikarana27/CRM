@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { leadSchema } from "@/lib/validations/lead.schema";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -196,7 +197,7 @@ export async function createLeadAction(
     await createWelcomeCallEntry({ leadId: lead.id, assignedToId: autoAssignedToId });
   }
 
-  await logActivity(session.user.id, "CREATE_LEAD", lead.id);
+  await logActivity(await getActingUserId(session), "CREATE_LEAD", lead.id);
 
   revalidatePath("/dashboard/admin/leads");
   redirect("/dashboard/admin/leads");
@@ -243,7 +244,7 @@ export async function updateLeadAction(
     },
   });
 
-  await logActivity(session.user.id, "UPDATE_LEAD", id);
+  await logActivity(await getActingUserId(session), "UPDATE_LEAD", id);
 
   revalidatePath("/dashboard/admin/leads");
   redirect("/dashboard/admin/leads");
@@ -274,7 +275,7 @@ export async function assignLeadAction(leadId: string, employeeId: string) {
     },
   });
 
-  await logActivity(session.user.id, "ASSIGN_LEAD", leadId);
+  await logActivity(await getActingUserId(session), "ASSIGN_LEAD", leadId);
   await createWelcomeCallEntry({ leadId, assignedToId: employeeId });
 
   revalidatePath("/dashboard/admin/leads");
@@ -305,7 +306,7 @@ export async function unassignLeadAction(leadId: string) {
     },
   });
 
-  await logActivity(session.user.id, "UNASSIGN_LEAD", leadId);
+  await logActivity(await getActingUserId(session), "UNASSIGN_LEAD", leadId);
 
   revalidatePath("/dashboard/admin/leads");
 }
@@ -336,7 +337,7 @@ export async function bulkAssignLeadsAction(leadIds: string[], employeeId: strin
   });
 
   for (const leadId of leadIds) {
-    await logActivity(session.user.id, "BULK_ASSIGN_LEAD", leadId);
+    await logActivity(await getActingUserId(session), "BULK_ASSIGN_LEAD", leadId);
     await createWelcomeCallEntry({ leadId, assignedToId: employeeId });
   }
 

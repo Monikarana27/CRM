@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { revalidatePath } from "next/cache";
 import { sendProfileEmail } from "@/lib/email/send-profile-email";
 
@@ -140,7 +141,7 @@ export async function sendSelectedProfilesAction(
 
     await prisma.activityLog.create({
       data: {
-        actorId: session.user.id,
+        actorId: await getActingUserId(session),
         action: "SEND_SEARCHED_PROFILES",
         entityType: "Profile",
         entityId: selectedProfileIds[0],

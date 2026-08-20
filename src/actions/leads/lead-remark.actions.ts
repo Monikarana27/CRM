@@ -1,6 +1,7 @@
 ﻿"use server";
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { revalidatePath } from "next/cache";
 
 export async function addLeadRemarkAction(
@@ -32,7 +33,7 @@ export async function addLeadRemarkAction(
   });
 
   await prisma.activityLog.create({
-    data: { actorId: session.user.id, action: `LEAD_CALL_${outcome}`, entityType: "Lead", entityId: leadId },
+    data: { actorId: await getActingUserId(session), action: `LEAD_CALL_${outcome}`, entityType: "Lead", entityId: leadId },
   });
 
   revalidatePath(`/dashboard/admin/leads/${leadId}`);

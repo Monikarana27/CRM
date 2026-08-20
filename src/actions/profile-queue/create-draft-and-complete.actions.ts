@@ -1,6 +1,7 @@
 "use server";
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { generateProfileCode } from "@/lib/utils/profile-code";
 import { profileSchema } from "@/lib/validations/profile.schema";
 import { extractProfileData, extractPartnerPreferenceData } from "@/lib/utils/profile-data";
@@ -51,7 +52,7 @@ export async function createDraftProfileFromQueueAction(
 
   await prisma.activityLog.create({
     data: {
-      actorId: session.user.id,
+      actorId: await getActingUserId(session),
       action: "CREATE_DRAFT_PROFILE_FROM_QUEUE",
       entityType: "Profile",
       entityId: profile.id,
@@ -96,7 +97,7 @@ export async function updateAndCompleteQueueAction(
 
   await prisma.activityLog.create({
     data: {
-      actorId: session.user.id,
+      actorId: await getActingUserId(session),
       action: "COMPLETE_PROFILE_FROM_QUEUE",
       entityType: "Profile",
       entityId: profileId,

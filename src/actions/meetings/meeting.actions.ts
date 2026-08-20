@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { meetingSchema } from "@/lib/validations/meeting.schema";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -85,7 +86,7 @@ export async function createMeetingAction(
     },
   });
 
-  await logActivity(session.user.id, "CREATE_MEETING", meeting.id);
+  await logActivity(await getActingUserId(session), "CREATE_MEETING", meeting.id);
 
   revalidatePath("/dashboard/admin/meetings");
   redirect("/dashboard/admin/meetings");
@@ -102,7 +103,7 @@ export async function updateMeetingStatusAction(
     data: { status },
   });
 
-  await logActivity(session.user.id, `MEETING_STATUS_${status}`, meetingId);
+  await logActivity(await getActingUserId(session), `MEETING_STATUS_${status}`, meetingId);
 
   revalidatePath("/dashboard/admin/meetings");
 }
@@ -118,7 +119,7 @@ export async function updateMeetingOutcomeAction(
     data: { outcome },
   });
 
-  await logActivity(session.user.id, `MEETING_OUTCOME_${outcome}`, meetingId);
+  await logActivity(await getActingUserId(session), `MEETING_OUTCOME_${outcome}`, meetingId);
 
   revalidatePath("/dashboard/admin/meetings");
 }
@@ -138,7 +139,7 @@ export async function rescheduleMeetingAction(meetingId: string, scheduledAt: st
     },
   });
 
-  await logActivity(session.user.id, "RESCHEDULE_MEETING", meetingId);
+  await logActivity(await getActingUserId(session), "RESCHEDULE_MEETING", meetingId);
 
   revalidatePath("/dashboard/admin/meetings");
 }
@@ -151,7 +152,7 @@ export async function updateMeetingNotesAction(meetingId: string, notes: string)
     data: { notes: notes || null },
   });
 
-  await logActivity(session.user.id, "UPDATE_MEETING_NOTES", meetingId);
+  await logActivity(await getActingUserId(session), "UPDATE_MEETING_NOTES", meetingId);
 
   revalidatePath("/dashboard/admin/meetings");
 }

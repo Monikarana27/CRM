@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { generatePaymentToken } from "@/lib/payments/token";
 import { getActiveGateway } from "@/lib/payments";
 import { revalidatePath } from "next/cache";
@@ -69,7 +70,7 @@ export async function createPaymentOfferAction(params: {
 
   await prisma.activityLog.create({
     data: {
-      actorId: session.user.id,
+      actorId: await getActingUserId(session),
       action: "OFFER_CREATED",
       entityType: "PaymentOffer",
       entityId: offer.id,
@@ -104,7 +105,7 @@ export async function cancelPaymentOfferAction(offerId: string) {
   });
 
   await prisma.activityLog.create({
-    data: { actorId: session.user.id, action: "OFFER_CANCELLED", entityType: "PaymentOffer", entityId: offerId },
+    data: { actorId: await getActingUserId(session), action: "OFFER_CANCELLED", entityType: "PaymentOffer", entityId: offerId },
   });
 
   revalidatePath("/dashboard/admin/payment-offers");

@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { hashPassword } from "@/lib/auth/password";
 import { employeeSchema } from "@/lib/validations/employee.schema";
 import { generateTempPassword } from "@/lib/utils/generate-password";
@@ -157,7 +158,7 @@ export async function createEmployeeAction(
     },
   });
 
-  await logActivity(session.user.id, "CREATE_EMPLOYEE", employee.id);
+  await logActivity(await getActingUserId(session), "CREATE_EMPLOYEE", employee.id);
 
   revalidatePath("/dashboard/admin/employees");
   redirect("/dashboard/admin/employees");
@@ -224,7 +225,7 @@ export async function updateEmployeeAction(
     data: updateData,
   });
 
-  await logActivity(session.user.id, "UPDATE_EMPLOYEE", id);
+  await logActivity(await getActingUserId(session), "UPDATE_EMPLOYEE", id);
 
   revalidatePath("/dashboard/admin/employees");
   redirect("/dashboard/admin/employees");
@@ -238,8 +239,7 @@ export async function toggleEmployeeActiveAction(id: string, active: boolean) {
     data: { active },
   });
 
-  await logActivity(
-    session.user.id,
+  await logActivity(await getActingUserId(session),
     active ? "ACTIVATE_EMPLOYEE" : "DEACTIVATE_EMPLOYEE",
     id
   );
@@ -258,7 +258,7 @@ export async function resetEmployeePasswordAction(id: string) {
     data: { password: hashedPassword },
   });
 
-  await logActivity(session.user.id, "RESET_PASSWORD", id);
+  await logActivity(await getActingUserId(session), "RESET_PASSWORD", id);
 
   revalidatePath("/dashboard/admin/employees");
 

@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { callLogSchema } from "@/lib/validations/call-log.schema";
 import { revalidatePath } from "next/cache";
 
@@ -69,7 +70,7 @@ export async function createCallLogAction(
     },
   });
 
-  await logActivity(session.user.id, "CREATE_CALL_LOG", callLog.id);
+  await logActivity(await getActingUserId(session), "CREATE_CALL_LOG", callLog.id);
 
   revalidatePath("/dashboard/admin/welcome-calls");
   revalidatePath("/dashboard/service/welcome-calls");

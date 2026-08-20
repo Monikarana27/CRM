@@ -1,6 +1,7 @@
 "use server";
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { revalidatePath } from "next/cache";
 
 export async function sendToProfileCreationAction(leadId: string) {
@@ -20,7 +21,7 @@ export async function sendToProfileCreationAction(leadId: string) {
     data: { leadId, sentById: session.user.id },
   });
   await prisma.activityLog.create({
-    data: { actorId: session.user.id, action: "SEND_TO_PROFILE_CREATION", entityType: "Lead", entityId: leadId },
+    data: { actorId: await getActingUserId(session), action: "SEND_TO_PROFILE_CREATION", entityType: "Lead", entityId: leadId },
   });
   revalidatePath("/dashboard/admin/leads");
   return { error: null };

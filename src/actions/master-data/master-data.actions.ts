@@ -7,6 +7,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { revalidatePath } from "next/cache";
 
 async function requireAdmin() {
@@ -42,7 +43,7 @@ export async function createReligionAction(_prevState: unknown, formData: FormDa
   if (existing) return { error: "This religion already exists" };
 
   const rec = await prisma.religion.create({ data: { name } });
-  await logActivity(session.user.id, "CREATE_RELIGION", "Religion", rec.id);
+  await logActivity(await getActingUserId(session), "CREATE_RELIGION", "Religion", rec.id);
   revalidatePath("/dashboard/admin/master-data");
   return { error: null };
 }
@@ -54,7 +55,7 @@ export async function deleteReligionAction(id: string) {
     return { error: `Cannot delete — ${inUse} profile(s) still use this religion` };
   }
   await prisma.religion.delete({ where: { id } });
-  await logActivity(session.user.id, "DELETE_RELIGION", "Religion", id);
+  await logActivity(await getActingUserId(session), "DELETE_RELIGION", "Religion", id);
   revalidatePath("/dashboard/admin/master-data");
   return { error: null };
 }
@@ -79,7 +80,7 @@ export async function createCasteAction(_prevState: unknown, formData: FormData)
   if (existing) return { error: "This caste already exists for the selected religion" };
 
   const rec = await prisma.caste.create({ data: { name, religionId } });
-  await logActivity(session.user.id, "CREATE_CASTE", "Caste", rec.id);
+  await logActivity(await getActingUserId(session), "CREATE_CASTE", "Caste", rec.id);
   revalidatePath("/dashboard/admin/master-data");
   return { error: null };
 }
@@ -91,7 +92,7 @@ export async function deleteCasteAction(id: string) {
     return { error: `Cannot delete — ${inUse} profile(s) still use this caste` };
   }
   await prisma.caste.delete({ where: { id } });
-  await logActivity(session.user.id, "DELETE_CASTE", "Caste", id);
+  await logActivity(await getActingUserId(session), "DELETE_CASTE", "Caste", id);
   revalidatePath("/dashboard/admin/master-data");
   return { error: null };
 }
@@ -114,7 +115,7 @@ export async function createGotraAction(_prevState: unknown, formData: FormData)
   if (existing) return { error: "This gotra already exists" };
 
   const rec = await prisma.gotra.create({ data: { name } });
-  await logActivity(session.user.id, "CREATE_GOTRA", "Gotra", rec.id);
+  await logActivity(await getActingUserId(session), "CREATE_GOTRA", "Gotra", rec.id);
   revalidatePath("/dashboard/admin/master-data");
   return { error: null };
 }
@@ -126,7 +127,7 @@ export async function deleteGotraAction(id: string) {
     return { error: `Cannot delete — ${inUse} profile(s) still use this gotra` };
   }
   await prisma.gotra.delete({ where: { id } });
-  await logActivity(session.user.id, "DELETE_GOTRA", "Gotra", id);
+  await logActivity(await getActingUserId(session), "DELETE_GOTRA", "Gotra", id);
   revalidatePath("/dashboard/admin/master-data");
   return { error: null };
 }
@@ -149,7 +150,7 @@ export async function createMotherTongueAction(_prevState: unknown, formData: Fo
   if (existing) return { error: "This mother tongue already exists" };
 
   const rec = await prisma.motherTongueRef.create({ data: { name } });
-  await logActivity(session.user.id, "CREATE_MOTHER_TONGUE", "MotherTongueRef", rec.id);
+  await logActivity(await getActingUserId(session), "CREATE_MOTHER_TONGUE", "MotherTongueRef", rec.id);
   revalidatePath("/dashboard/admin/master-data");
   return { error: null };
 }
@@ -161,7 +162,7 @@ export async function deleteMotherTongueAction(id: string) {
     return { error: `Cannot delete — ${inUse} profile(s) still use this mother tongue` };
   }
   await prisma.motherTongueRef.delete({ where: { id } });
-  await logActivity(session.user.id, "DELETE_MOTHER_TONGUE", "MotherTongueRef", id);
+  await logActivity(await getActingUserId(session), "DELETE_MOTHER_TONGUE", "MotherTongueRef", id);
   revalidatePath("/dashboard/admin/master-data");
   return { error: null };
 }

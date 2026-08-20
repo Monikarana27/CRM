@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { can } from "@/lib/permissions/can";
 import { paymentSchema } from "@/lib/validations/payment.schema";
 import { revalidatePath } from "next/cache";
@@ -84,7 +85,7 @@ export async function createPaymentAction(
     },
   });
 
-  await logActivity(session.user.id, "CREATE_PAYMENT", payment.id);
+  await logActivity(await getActingUserId(session), "CREATE_PAYMENT", payment.id);
 
   if (parsed.data.status === "PAID") {
     const sub = await prisma.subscription.findUnique({
@@ -114,7 +115,7 @@ export async function updatePaymentStatusAction(
     },
   });
 
-  await logActivity(session.user.id, `PAYMENT_STATUS_${status}`, paymentId);
+  await logActivity(await getActingUserId(session), `PAYMENT_STATUS_${status}`, paymentId);
 
   if (status === "PAID") {
     const payment = await prisma.payment.findUnique({

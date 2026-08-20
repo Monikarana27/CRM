@@ -1,6 +1,7 @@
 "use server";
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { profileSchema } from "@/lib/validations/profile.schema";
 import { generateProfileCode } from "@/lib/utils/profile-code";
 import { redirect } from "next/navigation";
@@ -116,7 +117,7 @@ export async function createProfileFromQueueAction(queueId: string, _prevState: 
   });
 
   await prisma.activityLog.create({
-    data: { actorId: session.user.id, action: "CREATE_PROFILE_FROM_QUEUE", entityType: "Profile", entityId: profile.id },
+    data: { actorId: await getActingUserId(session), action: "CREATE_PROFILE_FROM_QUEUE", entityType: "Profile", entityId: profile.id },
   });
 
   redirect(`/dashboard/profile-creator`);

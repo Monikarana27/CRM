@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { profileSchema } from "@/lib/validations/profile.schema";
 import { generateProfileCode } from "@/lib/utils/profile-code";
 import { revalidatePath } from "next/cache";
@@ -255,7 +256,7 @@ export async function createProfileAction(
     },
   });
 
-  await logActivity(session.user.id, "CREATE_PROFILE", profile.id);
+  await logActivity(await getActingUserId(session), "CREATE_PROFILE", profile.id);
 
   if (autoAssignedToId) {
     await createWelcomeCallEntry({ profileId: profile.id, assignedToId: autoAssignedToId });
@@ -306,7 +307,7 @@ export async function updateProfileAction(
     },
   });
 
-  await logActivity(session.user.id, "UPDATE_PROFILE", id);
+  await logActivity(await getActingUserId(session), "UPDATE_PROFILE", id);
 
   revalidatePath("/dashboard/admin/profiles");
   redirect(`/dashboard/admin/profiles`);
@@ -327,8 +328,7 @@ export async function assignProfileAction(profileId: string, employeeId: string)
     },
   });
 
-  await logActivity(
-    session.user.id,
+  await logActivity(await getActingUserId(session),
     wasAssigned ? "REASSIGN_PROFILE" : "ASSIGN_PROFILE",
     profileId
   );
@@ -345,7 +345,7 @@ export async function unassignProfileAction(profileId: string) {
     data: { assignedToId: null, assignedAt: null, status: "UNASSIGNED" },
   });
 
-  await logActivity(session.user.id, "UNASSIGN_PROFILE", profileId);
+  await logActivity(await getActingUserId(session), "UNASSIGN_PROFILE", profileId);
 
   revalidatePath("/dashboard/admin/profiles");
 }
@@ -359,7 +359,7 @@ export async function bulkAssignProfilesAction(profileIds: string[], employeeId:
   });
 
   for (const id of profileIds) {
-    await logActivity(session.user.id, "BULK_ASSIGN_PROFILE", id);
+    await logActivity(await getActingUserId(session), "BULK_ASSIGN_PROFILE", id);
     await createWelcomeCallEntry({ profileId: id, assignedToId: employeeId });
   }
 
@@ -377,7 +377,7 @@ export async function approveProfileAction(profileId: string) {
     data: { approvalStatus: "APPROVED", approvalNotes: null },
   });
 
-  await logActivity(session.user.id, "APPROVE_PROFILE", profileId);
+  await logActivity(await getActingUserId(session), "APPROVE_PROFILE", profileId);
   revalidatePath("/dashboard/admin/profiles");
 }
 
@@ -392,7 +392,7 @@ export async function rejectProfileAction(profileId: string, notes: string) {
     data: { approvalStatus: "NEEDS_CHANGES", approvalNotes: notes || null },
   });
 
-  await logActivity(session.user.id, "REJECT_PROFILE", profileId);
+  await logActivity(await getActingUserId(session), "REJECT_PROFILE", profileId);
   revalidatePath("/dashboard/admin/profiles");
 }
 

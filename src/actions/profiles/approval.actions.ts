@@ -1,6 +1,7 @@
 "use server";
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { revalidatePath } from "next/cache";
 
 export async function approveProfileAction(profileId: string) {
@@ -8,7 +9,7 @@ export async function approveProfileAction(profileId: string) {
   if (!session?.user || !["SUPER_ADMIN", "ADMIN"].includes(session.user.role)) throw new Error("Unauthorized");
 
   await prisma.profile.update({ where: { id: profileId }, data: { approvalStatus: "APPROVED", approvalNotes: null } });
-  await prisma.activityLog.create({ data: { actorId: session.user.id, action: "APPROVE_PROFILE", entityType: "Profile", entityId: profileId } });
+  await prisma.activityLog.create({ data: { actorId: await getActingUserId(session), action: "APPROVE_PROFILE", entityType: "Profile", entityId: profileId } });
   revalidatePath("/dashboard/admin/profiles");
 }
 
@@ -17,7 +18,7 @@ export async function requestChangesAction(profileId: string, notes: string) {
   if (!session?.user || !["SUPER_ADMIN", "ADMIN"].includes(session.user.role)) throw new Error("Unauthorized");
 
   await prisma.profile.update({ where: { id: profileId }, data: { approvalStatus: "NEEDS_CHANGES", approvalNotes: notes } });
-  await prisma.activityLog.create({ data: { actorId: session.user.id, action: "REQUEST_PROFILE_CHANGES", entityType: "Profile", entityId: profileId } });
+  await prisma.activityLog.create({ data: { actorId: await getActingUserId(session), action: "REQUEST_PROFILE_CHANGES", entityType: "Profile", entityId: profileId } });
   revalidatePath("/dashboard/admin/profiles");
 }
 

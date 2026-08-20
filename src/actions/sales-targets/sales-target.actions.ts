@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { salesTargetSchema } from "@/lib/validations/sales-target.schema";
 import { revalidatePath } from "next/cache";
 import { getTeamMemberIds } from "@/lib/hierarchy/team";
@@ -246,7 +247,7 @@ export async function addAchievementAction(
 
   await prisma.activityLog.create({
     data: {
-      actorId: session.user.id,
+      actorId: await getActingUserId(session),
       action: "ADD_ACHIEVEMENT",
       entityType: "Achievement",
       entityId: achievement.id,

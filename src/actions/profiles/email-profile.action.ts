@@ -1,5 +1,6 @@
 "use server";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { prisma } from "@/lib/db/prisma";
 import { sendProfileEmail } from "@/lib/email/send-profile-email";
 
@@ -12,6 +13,6 @@ export async function sendProfileEmailAction(profileId: string, toEmail: string)
 
   await sendProfileEmail(toEmail, profile.name, profile.profileCode, profile.photoUrl);
   await prisma.activityLog.create({
-    data: { actorId: session.user.id, action: "EMAIL_PROFILE", entityType: "Profile", entityId: profileId },
+    data: { actorId: await getActingUserId(session), action: "EMAIL_PROFILE", entityType: "Profile", entityId: profileId },
   });
 }

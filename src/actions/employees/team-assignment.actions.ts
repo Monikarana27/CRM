@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { revalidatePath } from "next/cache";
 import { MANAGER_ROLE_MAP, ASSIGNABLE_ROLES } from "@/lib/hierarchy/manager-role-map";
 
@@ -106,7 +107,7 @@ export async function bulkAssignTeamAction(
     }),
   ]);
 
-  await logActivity(session.user.id, "BULK_ASSIGN_TEAM", leaderId);
+  await logActivity(await getActingUserId(session), "BULK_ASSIGN_TEAM", leaderId);
 
   revalidatePath("/dashboard/admin/team-hierarchy");
   revalidatePath("/dashboard/admin/employees");

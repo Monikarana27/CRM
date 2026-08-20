@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
+import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { subscriptionSchema } from "@/lib/validations/subscription.schema";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -77,7 +78,7 @@ export async function createSubscriptionAction(
     },
   });
 
-  await logActivity(session.user.id, "CREATE_SUBSCRIPTION", subscription.id);
+  await logActivity(await getActingUserId(session), "CREATE_SUBSCRIPTION", subscription.id);
 
   revalidatePath("/dashboard/admin/subscriptions");
   redirect("/dashboard/admin/subscriptions");
@@ -94,7 +95,7 @@ export async function updateSubscriptionStatusAction(
     data: { status },
   });
 
-  await logActivity(session.user.id, `SUBSCRIPTION_STATUS_${status}`, subscriptionId);
+  await logActivity(await getActingUserId(session), `SUBSCRIPTION_STATUS_${status}`, subscriptionId);
 
   revalidatePath("/dashboard/admin/subscriptions");
 }
