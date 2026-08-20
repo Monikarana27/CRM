@@ -131,36 +131,43 @@ export async function sendSelectedProfilesAction(
 ) {
   const session = await requireStaff();
 
-  const profiles = await prisma.profile.findMany({ where: { id: { in: selectedProfileIds } } });
+  try {
+    const profiles = await prisma.profile.findMany({ where: { id: { in: selectedProfileIds } } });
 
-  for (const p of profiles) {
-    await sendProfileEmail(toEmail, p.name, p.profileCode, p.photoUrl);
-  }
+    for (const p of profiles) {
+      await sendProfileEmail(toEmail, p.name, p.profileCode, p.photoUrl);
+    }
 
-  await prisma.activityLog.create({
-    data: {
-      actorId: session.user.id,
-      action: "SEND_SEARCHED_PROFILES",
-      entityType: "Profile",
-      entityId: selectedProfileIds[0],
-    },
-  });
-
-  const subscription = await prisma.subscription.findFirst({
-    where: { profileId: clientProfileId, status: "ACTIVE" },
-    orderBy: { createdAt: "desc" },
-  });
-
-  if (subscription) {
-    await prisma.profileShare.createMany({
-      data: selectedProfileIds.map((sharedProfileId) => ({
-        subscriptionId: subscription.id,
-        sharedProfileId,
-        sharedById: session.user.id,
-      })),
+    await prisma.activityLog.create({
+      data: {
+        actorId: session.user.id,
+        action: "SEND_SEARCHED_PROFILES",
+        entityType: "Profile",
+        entityId: selectedProfileIds[0],
+      },
     });
-  }
 
-  revalidatePath("/dashboard/service");
-  return { count: profiles.length, hasSubscription: !!subscription };
+    const subscription = await prisma.subscription.findFirst({
+      where: { profileId: clientProfileId, status: "ACTIVE" },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (subscription) {
+      await prisma.profileShare.createMany({
+        data: selectedProfileIds.map((sharedProfileId) => ({
+          subscriptionId: subscription.id,
+          sharedProfileId,
+          sharedById: session.user.id,
+        })),
+      });
+    }
+
+    revalidatePath("/dashboard/service");
+    return { count: profiles.length, hasSubscription: !!subscription, error: null as string | null };
+  } catch (err) {
+    // Surface the real cause instead of letting it crash the whole page with a generic digest.
+    console.error("sendSelectedProfilesAction failed:", err);
+    const message = err instanceof Error ? err.message : "Unknown error while sending profiles";
+    return { count: 0, hasSubscription: false, error: message };
+  }
 }

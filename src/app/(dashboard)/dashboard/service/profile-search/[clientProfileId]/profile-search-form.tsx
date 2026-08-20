@@ -49,6 +49,7 @@ export function ProfileSearchForm({
   const [isSearching, startSearch] = useTransition();
   const [isSending, startSending] = useTransition();
   const [sent, setSent] = useState<number | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   function updateFilter(key: string, value: string) {
     setFilters((f) => ({ ...f, [key]: value }));
@@ -81,7 +82,12 @@ export function ProfileSearchForm({
 
   function send() {
     startSending(async () => {
+      setSendError(null);
       const result = await sendSelectedProfilesAction(clientProfileId, email, selected);
+      if (result.error) {
+        setSendError(result.error);
+        return;
+      }
       setSent(result.count);
     });
   }
@@ -205,6 +211,9 @@ export function ProfileSearchForm({
               {isSending ? "Sending..." : sent !== null ? `Sent ✓ (${sent})` : `Send ${selected.length} Profiles`}
             </Button>
           </div>
+          {sendError && (
+            <p className="text-sm text-destructive">Failed to send: {sendError}</p>
+          )}
         </div>
       )}
     </div>
