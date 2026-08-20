@@ -24,7 +24,7 @@ export const employeeSchema = z.object({
     ],
     { message: "Select a valid role" }
   ),
-  department: z.enum(["SALES_EMP", "PROFILE_EMP", "SERVICE_EMP", "HR_EMP"]).optional(),
+  department: z.enum(["SALES_EMP", "PROFILE_EMP", "SERVICE_EMP", "HR_EMP"]).optional().or(z.literal("")),
   managerId: z.string().optional().or(z.literal("")),
   active: z.boolean().default(true),
 });

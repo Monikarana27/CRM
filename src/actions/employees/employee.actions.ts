@@ -32,6 +32,11 @@ const MANAGER_CANDIDATE_ROLES = [
   "SUPER_ADMIN",
 ] as const;
 
+// Roles with no visible "Reports To" field in the employee form
+// (Profile Creator, Admin, Super Admin, HR) are auto-assigned to
+// report to the primary Super Admin instead.
+const NO_MANAGER_FIELD_ROLES: AnyRole[] = ["PROFILE_CREATOR", "ADMIN", "SUPER_ADMIN", "HR"];
+
 async function requireAdmin() {
   const session = await auth();
   if (!session?.user || !["ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {
@@ -48,6 +53,35 @@ async function logActivity(actorId: string, action: string, entityId: string) {
       entityId,
     },
   });
+}
+
+async function getSuperAdminId(excludeUserId?: string) {
+  const superAdmin = await prisma.user.findFirst({
+    where: {
+      role: "SUPER_ADMIN",
+      active: true,
+      ...(excludeUserId ? { NOT: { id: excludeUserId } } : {}),
+    },
+    select: { id: true },
+    orderBy: { createdAt: "asc" },
+  });
+  return superAdmin?.id ?? null;
+}
+
+/**
+ * Roles without a visible "Reports To" field (Profile Creator, Admin,
+ * Super Admin, HR) are auto-assigned to report to the primary Super Admin,
+ * instead of relying on a hidden input that isn't rendered for them.
+ */
+async function resolveManagerId(
+  role: AnyRole,
+  requestedManagerId: string | null,
+  selfId?: string
+) {
+  if (NO_MANAGER_FIELD_ROLES.includes(role)) {
+    return getSuperAdminId(role === "SUPER_ADMIN" ? selfId : undefined);
+  }
+  return requestedManagerId || null;
 }
 
 export async function getEmployees() {
@@ -124,7 +158,7 @@ export async function createEmployeeAction(
     password: formData.get("password"),
     role: formData.get("role"),
     department: formData.get("department"),
-    managerId: formData.get("managerId"),
+    managerId: formData.get("managerId") ?? "",
     active: formData.get("active") === "on",
   });
 
@@ -145,6 +179,8 @@ export async function createEmployeeAction(
 
   const hashedPassword = await hashPassword(parsed.data.password);
 
+  const resolvedManagerId = await resolveManagerId(parsed.data.role, parsed.data.managerId || null);
+
   const employee = await prisma.user.create({
     data: {
       name: parsed.data.name,
@@ -153,7 +189,7 @@ export async function createEmployeeAction(
       password: hashedPassword,
       role: parsed.data.role,
       department: parsed.data.department || null,
-      managerId: parsed.data.managerId || null,
+      managerId: resolvedManagerId,
       active: parsed.data.active,
     },
   });
@@ -178,7 +214,7 @@ export async function updateEmployeeAction(
     password: formData.get("password"),
     role: formData.get("role"),
     department: formData.get("department"),
-    managerId: formData.get("managerId"),
+    managerId: formData.get("managerId") ?? "",
     active: formData.get("active") === "on",
   });
 
@@ -197,6 +233,8 @@ export async function updateEmployeeAction(
     return { error: "An employee cannot report to themselves" };
   }
 
+  const resolvedManagerId = await resolveManagerId(parsed.data.role, parsed.data.managerId || null, id);
+
   const updateData: {
     name: string;
     email: string;
@@ -212,7 +250,7 @@ export async function updateEmployeeAction(
     phone: parsed.data.phone || null,
     role: parsed.data.role,
     department: parsed.data.department || null,
-    managerId: parsed.data.managerId || null,
+    managerId: resolvedManagerId,
     active: parsed.data.active,
   };
 
