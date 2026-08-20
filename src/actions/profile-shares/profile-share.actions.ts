@@ -2,9 +2,8 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
-import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { revalidatePath } from "next/cache";
-import { sendProfileEmail } from "@/lib/email/send-profile-email";
+import { sendMatchedProfilesEmail } from "@/lib/email/send-profile-email";
 
 async function requireStaff() {
   const session = await auth();
@@ -125,6 +124,19 @@ export async function searchProfilesAction(filters: ProfileSearchFilters) {
   });
 }
 
+function calcAge(dob: Date | null): number | null {
+  if (!dob) return null;
+  const diff = Date.now() - new Date(dob).getTime();
+  return Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
+}
+
+function formatRole(role: string): string {
+  return role
+    .split("_")
+    .map((w) => w[0] + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
 export async function sendSelectedProfilesAction(
   clientProfileId: string,
   toEmail: string,
@@ -133,15 +145,47 @@ export async function sendSelectedProfilesAction(
   const session = await requireStaff();
 
   try {
-    const profiles = await prisma.profile.findMany({ where: { id: { in: selectedProfileIds } } });
+    const [profiles, clientProfile, sender] = await Promise.all([
+      prisma.profile.findMany({
+        where: { id: { in: selectedProfileIds } },
+        include: {
+          religion: { select: { name: true } },
+          caste: { select: { name: true } },
+        },
+      }),
+      prisma.profile.findUnique({ where: { id: clientProfileId }, select: { name: true } }),
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { name: true, email: true, phone: true, role: true },
+      }),
+    ]);
 
-    for (const p of profiles) {
-      await sendProfileEmail(toEmail, p.name, p.profileCode, p.photoUrl);
-    }
+    await sendMatchedProfilesEmail(
+      toEmail,
+      clientProfile?.name ?? "",
+      profiles.map((p) => ({
+        name: p.name,
+        profileCode: p.profileCode,
+        photoUrl: p.photoUrl,
+        age: calcAge(p.dob),
+        height: p.height,
+        city: p.city,
+        religionName: p.religion?.name ?? null,
+        casteName: p.caste?.name ?? null,
+        profession: p.profession,
+        highestQualification: p.highestQualification,
+      })),
+      {
+        name: sender?.name ?? session.user.name ?? "Sangam Vivah Team",
+        role: sender?.role ? formatRole(sender.role) : undefined,
+        email: sender?.email ?? undefined,
+        phone: sender?.phone ?? undefined,
+      }
+    );
 
     await prisma.activityLog.create({
       data: {
-        actorId: await getActingUserId(session),
+        actorId: session.user.id,
         action: "SEND_SEARCHED_PROFILES",
         entityType: "Profile",
         entityId: selectedProfileIds[0],
