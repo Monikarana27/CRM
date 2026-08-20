@@ -104,6 +104,18 @@ async function main() {
       role: Role.PROFILE_CREATOR,
       department: Department.PROFILE_EMP,
     },
+    {
+      name: "Pallavi Sharma",
+      email: "pallavi.sharma@elitebandhan.com",
+      role: Role.SALES_MANAGER,
+      department: Department.SALES_EMP,
+    },
+    {
+      name: "Shayina Sheikh",
+      email: "shayina.sheikh@elitebandhan.com",
+      role: Role.SERVICE_MANAGER,
+      department: Department.SERVICE_EMP,
+    },
   ];
 
   for (const emp of employees) {
@@ -184,7 +196,7 @@ async function main() {
   console.log("  admin@sangamcrm.com   (ADMIN)");
   console.log("  sales@sangamcrm.com   (SALES)");
   console.log("  service@sangamcrm.com (SERVICE)");
-  console.log("  9 real employees seeded (SERVICE / SALES / PROFILE_CREATOR)");
+  console.log("  11 real employees seeded (SERVICE / SALES / PROFILE_CREATOR / SALES_MANAGER / SERVICE_MANAGER)");
   console.log(`  Removed ${deleted.count} old user(s); their leads/profiles/meetings reassigned to admin`);
 }
 
