@@ -247,6 +247,82 @@ export async function toggleEmployeeActiveAction(id: string, active: boolean) {
   revalidatePath("/dashboard/admin/employees");
 }
 
+export async function deleteEmployeeAction(id: string) {
+  const session = await requireAdmin();
+  const actingUserId = await getActingUserId(session);
+
+  if (id === actingUserId) {
+    return { error: "You cannot delete your own account" };
+  }
+
+  const target = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true, role: true, name: true },
+  });
+
+  if (!target) {
+    return { error: "Employee not found" };
+  }
+
+  // Never allow deleting the last remaining admin account
+  if (["ADMIN", "SUPER_ADMIN"].includes(target.role)) {
+    const adminCount = await prisma.user.count({
+      where: { role: { in: ["ADMIN", "SUPER_ADMIN"] } },
+    });
+    if (adminCount <= 1) {
+      return { error: "Cannot delete the last remaining admin account" };
+    }
+  }
+
+  // Fallback admin to reassign this employee's records to
+  const fallbackAdmin = await prisma.user.findFirst({
+    where: { role: { in: ["ADMIN", "SUPER_ADMIN"] }, NOT: { id } },
+    select: { id: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  if (!fallbackAdmin) {
+    return { error: "No fallback admin account found to reassign records to" };
+  }
+  const fallbackId = fallbackAdmin.id;
+
+  await prisma.$transaction([
+    // Optional FKs — reassign so leads/profiles/meetings don't go unassigned
+    prisma.profile.updateMany({ where: { assignedToId: id }, data: { assignedToId: fallbackId } }),
+    prisma.lead.updateMany({ where: { assignedToId: id }, data: { assignedToId: fallbackId } }),
+    prisma.meeting.updateMany({ where: { assignedToId: id }, data: { assignedToId: fallbackId } }),
+    prisma.callLog.updateMany({ where: { createdById: id }, data: { createdById: fallbackId } }),
+    prisma.profileQueue.updateMany({ where: { sentById: id }, data: { sentById: fallbackId } }),
+    prisma.welcomeCall.updateMany({ where: { assignedToId: id }, data: { assignedToId: fallbackId } }),
+    // Required FKs (Restrict) — must reassign or the delete below would fail
+    prisma.leadRemark.updateMany({ where: { actorId: id }, data: { actorId: fallbackId } }),
+    prisma.workspaceMessage.updateMany({ where: { authorId: id }, data: { authorId: fallbackId } }),
+    prisma.workspaceMention.updateMany({ where: { mentionedUserId: id }, data: { mentionedUserId: fallbackId } }),
+    prisma.leadAssignmentHistory.updateMany({ where: { changedById: id }, data: { changedById: fallbackId } }),
+    prisma.leadAssignmentHistory.updateMany({ where: { fromEmployeeId: id }, data: { fromEmployeeId: fallbackId } }),
+    prisma.leadAssignmentHistory.updateMany({ where: { toEmployeeId: id }, data: { toEmployeeId: fallbackId } }),
+    prisma.profileShareComment.updateMany({ where: { authorId: id }, data: { authorId: fallbackId } }),
+    prisma.profileRemark.updateMany({ where: { actorId: id }, data: { actorId: fallbackId } }),
+    prisma.paymentOffer.updateMany({ where: { createdById: id }, data: { createdById: fallbackId } }),
+    // Required FKs (Cascade) — per-employee personal history, safe to remove
+    prisma.salesTarget.deleteMany({ where: { userId: id } }),
+    prisma.attendance.deleteMany({ where: { userId: id } }),
+    prisma.payroll.deleteMany({ where: { userId: id } }),
+    prisma.leaveRequest.deleteMany({ where: { userId: id } }),
+    prisma.performanceReview.deleteMany({ where: { userId: id } }),
+    prisma.loginEvent.deleteMany({ where: { userId: id } }),
+    prisma.activityLog.deleteMany({ where: { actorId: id } }),
+  ]);
+
+  await prisma.user.delete({ where: { id } });
+
+  await logActivity(actingUserId, "DELETE_EMPLOYEE", id);
+
+  revalidatePath("/dashboard/admin/employees");
+
+  return { success: true };
+}
+
 export async function resetEmployeePasswordAction(id: string) {
   const session = await requireAdmin();
 

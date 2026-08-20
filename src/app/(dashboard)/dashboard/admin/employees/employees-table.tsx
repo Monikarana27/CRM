@@ -46,12 +46,12 @@ const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: "Super Admin",
   ADMIN: "Admin",
   SALES: "Sales",
-  SALES_TL: "Sales Team Lead",
-  SALES_MANAGER: "Sales Manager",
+  SALES_TL: "Sales TL",
+  SALES_MANAGER: "Sales Mgr",
   PROFILE_CREATOR: "Profile Creator",
   SERVICE: "Service",
-  SERVICE_TL: "Service Team Lead",
-  SERVICE_MANAGER: "Service Manager",
+  SERVICE_TL: "Service TL",
+  SERVICE_MANAGER: "Service Mgr",
   HR: "HR",
 };
 
@@ -62,6 +62,8 @@ const DEPARTMENT_LABELS: Record<string, string> = {
   HR_EMP: "HR",
 };
 
+const badgeBase = "text-[11px] font-medium px-1.5 py-0 h-5 leading-5";
+
 export function EmployeesTable({ employees }: { employees: EmployeeRow[] }) {
   const [departmentFilter, setDepartmentFilter] = useState<string>("ALL");
 
@@ -71,14 +73,24 @@ export function EmployeesTable({ employees }: { employees: EmployeeRow[] }) {
   }, [employees, departmentFilter]);
 
   const columns: Column<EmployeeRow>[] = [
-    { key: "name", header: "Name", sortable: true },
+    {
+      key: "name",
+      header: "Name",
+      sortable: true,
+      render: (row) => (
+        <div className="flex flex-col leading-tight">
+          <span className="text-sm font-medium">{row.name}</span>
+          <span className="text-xs text-muted-foreground">{row.email}</span>
+        </div>
+      ),
+    },
     {
       key: "role",
       header: "Role",
       render: (row) => (
         <Badge
           variant="outline"
-          className={ROLE_STYLES[row.role] ?? "bg-gray-100 text-gray-700 border-gray-200"}
+          className={`${badgeBase} ${ROLE_STYLES[row.role] ?? "bg-gray-100 text-gray-700 border-gray-200"}`}
         >
           {ROLE_LABELS[row.role] ?? row.role}
         </Badge>
@@ -86,22 +98,35 @@ export function EmployeesTable({ employees }: { employees: EmployeeRow[] }) {
     },
     {
       key: "department",
-      header: "Department",
-      render: (row) => (row.department ? DEPARTMENT_LABELS[row.department] ?? row.department : "—"),
+      header: "Dept",
+      render: (row) => (
+        <span className="text-xs text-muted-foreground">
+          {row.department ? DEPARTMENT_LABELS[row.department] ?? row.department : "—"}
+        </span>
+      ),
     },
     {
       key: "manager",
       header: "Reports To",
-      render: (row) => row.manager?.name ?? "—",
+      render: (row) => (
+        <span className="text-xs text-muted-foreground">{row.manager?.name ?? "—"}</span>
+      ),
     },
-    { key: "phone", header: "Phone", render: (row) => row.phone ||"—" },
-    { key: "email", header: "Email", sortable: true },
+    {
+      key: "phone",
+      header: "Phone",
+      render: (row) => <span className="text-xs text-muted-foreground">{row.phone || "—"}</span>,
+    },
     {
       key: "createdAt",
-      header: "Joining Date",
+      header: "Joined",
       sortable: true,
       accessor: (row) => new Date(row.createdAt).getTime(),
-      render: (row) => new Date(row.createdAt).toLocaleDateString("en-IN"),
+      render: (row) => (
+        <span className="text-xs text-muted-foreground">
+          {new Date(row.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" })}
+        </span>
+      ),
     },
     {
       key: "active",
@@ -109,46 +134,44 @@ export function EmployeesTable({ employees }: { employees: EmployeeRow[] }) {
       render: (row) => (
         <Badge
           variant="outline"
-          className={
+          className={`${badgeBase} ${
             row.active
               ? "bg-emerald-100 text-emerald-700 border-emerald-200"
               : "bg-red-100 text-red-700 border-red-200"
-          }
+          }`}
         >
           {row.active ? "Active" : "Inactive"}
         </Badge>
       ),
     },
     {
-      key: "assignedLeads",
-      header: "Assigned Leads",
-      accessor: (row) => row._count.assignedLeads,
-      render: (row) => row._count.assignedLeads,
-    },
-    {
-      key: "assignedProfiles",
-      header: "Assigned Profiles",
-      accessor: (row) => row._count.assignedProfiles,
-      render: (row) => row._count.assignedProfiles,
+      key: "workload",
+      header: "Workload",
+      accessor: (row) => row._count.assignedLeads + row._count.assignedProfiles,
+      render: (row) => (
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
+          {row._count.assignedLeads}L · {row._count.assignedProfiles}P
+        </span>
+      ),
     },
     {
       key: "actions",
-      header: "Actions",
+      header: "",
       render: (row) => (
-        <div className="flex items-center gap-2">
-          <EmployeeRowActions employee={row} />
+        <div className="flex items-center justify-end gap-1">
           <ViewAsButton userId={row.id} />
+          <EmployeeRowActions employee={row} />
         </div>
       ),
     },
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-muted-foreground">Filter by department:</span>
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">Department:</span>
         <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="h-8 w-[150px] text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
