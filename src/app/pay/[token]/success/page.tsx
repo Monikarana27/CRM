@@ -26,7 +26,9 @@ export default async function PaymentSuccessPage({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Amount Paid</span>
-              <span className="font-medium">₹{offer.finalAmount.toLocaleString("en-IN")}</span>
+              <span className="font-medium">
+                {offer.currency === "USD" ? "$" : "₹"}{offer.finalAmount.toLocaleString(offer.currency === "USD" ? "en-US" : "en-IN")}
+              </span>
             </div>
             {offer.paymentTransactionId && (
               <div className="flex justify-between">

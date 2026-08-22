@@ -25,6 +25,7 @@ type Plan = { id: string; name: string; price: number };
 export function CreateOfferDialog({ profileId, plans }: { profileId: string; plans: Plan[] }) {
   const [open, setOpen] = useState(false);
   const [planId, setPlanId] = useState("");
+  const [currency, setCurrency] = useState<"INR" | "USD">("INR");
   const [discountType, setDiscountType] = useState<"PERCENTAGE" | "FIXED">("PERCENTAGE");
   const [discountValue, setDiscountValue] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
@@ -47,6 +48,7 @@ export function CreateOfferDialog({ profileId, plans }: { profileId: string; pla
       const res = await createPaymentOfferAction({
         profileId,
         planId,
+        currency,
         discountType,
         discountValue: discount,
         expiresAt,
@@ -99,6 +101,17 @@ export function CreateOfferDialog({ profileId, plans }: { profileId: string; pla
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label>Currency / Payment Gateway</Label>
+              <Select value={currency} onValueChange={(v) => setCurrency(v as "INR" | "USD")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="INR">INR — via PayU</SelectItem>
+                  <SelectItem value="USD">USD — via PayPal</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Discount Type</Label>
@@ -136,15 +149,15 @@ export function CreateOfferDialog({ profileId, plans }: { profileId: string; pla
               <div className="space-y-1 rounded-lg border bg-muted/30 p-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Original Price</span>
-                  <span>₹{selectedPlan.price.toLocaleString("en-IN")}</span>
+                  <span>{currency === "USD" ? "$" : "₹"}{selectedPlan.price.toLocaleString("en-IN")}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Discount</span>
-                  <span>−₹{(selectedPlan.price - finalAmount).toLocaleString("en-IN")}</span>
+                  <span>−{currency === "USD" ? "$" : "₹"}{(selectedPlan.price - finalAmount).toLocaleString("en-IN")}</span>
                 </div>
                 <div className="flex justify-between border-t pt-1 font-semibold">
                   <span>Customer Pays</span>
-                  <span>₹{finalAmount.toLocaleString("en-IN")}</span>
+                  <span>{currency === "USD" ? "$" : "₹"}{finalAmount.toLocaleString("en-IN")}</span>
                 </div>
               </div>
             )}

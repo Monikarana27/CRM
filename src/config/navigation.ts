@@ -18,6 +18,7 @@ import {
   TrendingUp,
   Stethoscope,
   Tag,
+  ShieldCheck,
 } from "lucide-react";
 
 import type { Role } from "@/lib/permissions/roles";
@@ -36,6 +37,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "Service Dashboard", href: "/dashboard/admin/service", icon: Stethoscope },
     { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
     { label: "Employees", href: "/dashboard/admin/employees", icon: Users },
+    { label: "Employee Access", href: "/dashboard/admin/employee-access", icon: ShieldCheck },
     { label: "Team Hierarchy", href: "/dashboard/admin/team-hierarchy", icon: Network },
     { label: "Profiles", href: "/dashboard/admin/profiles", icon: UserSquare2 },
     { label: "Leads", href: "/dashboard/admin/leads", icon: Contact },
@@ -52,6 +54,7 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
     { label: "Service Dashboard", href: "/dashboard/admin/service", icon: Stethoscope },
     { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
     { label: "Employees", href: "/dashboard/admin/employees", icon: Users },
+    { label: "Employee Access", href: "/dashboard/admin/employee-access", icon: ShieldCheck },
     { label: "Team Hierarchy", href: "/dashboard/admin/team-hierarchy", icon: Network },
     { label: "Profiles", href: "/dashboard/admin/profiles", icon: UserSquare2 },
     { label: "Leads", href: "/dashboard/admin/leads", icon: Contact },
@@ -132,10 +135,26 @@ export const NAV_CONFIG: Record<Role, NavItem[]> = {
   HR: [
     { label: "Dashboard", href: "/dashboard/hr", icon: LayoutDashboard },
     { label: "Workspace", href: "/dashboard/workspace", icon: MessageSquare },
-    { label: "Attendance", href: "/dashboard/hr/attendance", icon:CalendarClock },
+    { label: "Attendance", href: "/dashboard/hr/attendance", icon: CalendarClock },
     { label: "Leave", href: "/dashboard/hr/leave", icon: ClipboardList },
     { label: "Recruitment", href: "/dashboard/hr/recruitment", icon: Users },
     { label: "Performance", href: "/dashboard/hr/performance", icon: Activity },
     { label: "Payroll", href: "/dashboard/hr/payroll", icon: CreditCard },
   ],
 };
+/**
+ * One canonical nav destination per permission module, used to extend
+ * a role's sidebar when an employee has been granted extra access to
+ * that module via the Employee Access screen. Only modules that map
+ * to an actual page are listed here — "Conversion" and
+ * "ProfileCreation" don't have a distinct standalone page, so they're
+ * intentionally omitted and won't add a sidebar item even if granted.
+ */
+export const EXTRA_ACCESS_NAV_ITEMS: { module: string; item: NavItem }[] = [
+  { module: "Leads", item: { label: "Leads", href: "/dashboard/admin/leads", icon: Contact } },
+  { module: "Profiles", item: { label: "Profiles", href: "/dashboard/admin/profiles", icon: UserSquare2 } },
+  { module: "Service", item: { label: "Service Overview", href: "/dashboard/admin/service-overview", icon: HeartHandshake } },
+  { module: "Employees", item: { label: "Employees", href: "/dashboard/admin/employees", icon: Users } },
+  { module: "Settings", item: { label: "Settings", href: "/dashboard/admin/settings", icon: Settings } },
+  { module: "Payments", item: { label: "Payments", href: "/dashboard/admin/payments", icon: CreditCard } },
+];

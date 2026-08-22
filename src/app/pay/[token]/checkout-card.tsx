@@ -16,6 +16,11 @@ type Offer = {
   profile: { name: string };
 };
 
+function formatMoney(amount: number, currency: string) {
+  const symbol = currency === "USD" ? "$" : "₹";
+  return `${symbol}${amount.toLocaleString(currency === "USD" ? "en-US" : "en-IN")}`;
+}
+
 export function CheckoutCard({ offer }: { offer: Offer }) {
   const [isPending, startTransition] = useTransition();
   const [payError, setPayError] = useState<string | null>(null);
@@ -60,24 +65,25 @@ export function CheckoutCard({ offer }: { offer: Offer }) {
 
   return (
     <div className="w-full max-w-md overflow-hidden rounded-2xl border border-rose-100 bg-white shadow-xl">
-      <div className="bg-gradient-to-r from-rose-500 to-amber-500 px-6 py-8 text-center text-white">
-        <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-white/80">
-          SangamVivah — Special Offer
+      <div className="bg-white px-6 py-8 text-center border-b">
+        <p className="mb-1 text-2xl font-bold text-blue-600">EliteBandhan</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          Special Offer
         </p>
-        <h1 className="font-serif text-2xl font-bold">{offer.plan.name} Membership</h1>
+        <h1 className="font-serif text-xl font-bold text-gray-800">{offer.plan.name} Membership</h1>
       </div>
 
       <div className="space-y-6 px-6 py-6">
         <div className="text-center">
           <p className="text-sm text-muted-foreground line-through">
-            ₹{offer.originalAmount.toLocaleString("en-IN")}
+            {formatMoney(offer.originalAmount, offer.currency)}
           </p>
-          <p className="text-4xl font-bold text-rose-600">
-            ₹{offer.finalAmount.toLocaleString("en-IN")}
+          <p className="text-4xl font-bold text-blue-600">
+            {formatMoney(offer.finalAmount, offer.currency)}
           </p>
           <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
             <Sparkles className="h-3 w-3" />
-            You save ₹{savings.toLocaleString("en-IN")}
+            You save {formatMoney(savings, offer.currency)}
           </p>
         </div>
 
@@ -104,9 +110,9 @@ export function CheckoutCard({ offer }: { offer: Offer }) {
         <button
           onClick={handlePay}
           disabled={isPending}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 py-3.5 text-base font-semibold text-white shadow-md transition-transform hover:scale-[1.01] disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 text-base font-semibold text-white shadow-md transition-transform hover:scale-[1.01] hover:bg-blue-700 disabled:opacity-60"
         >
-          {isPending ? "Redirecting..." : `Pay ₹${offer.finalAmount.toLocaleString("en-IN")}`}
+          {isPending ? "Redirecting..." : `Pay ${formatMoney(offer.finalAmount, offer.currency)}`}
         </button>
 
         <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">

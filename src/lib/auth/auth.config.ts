@@ -1,4 +1,4 @@
-import type { NextAuthConfig } from "next-auth";
+﻿import type { NextAuthConfig } from "next-auth";
 import { canAccessRoute, type Role } from "@/lib/permissions/roles";
 
 export const authConfig: NextAuthConfig = {
@@ -17,12 +17,13 @@ export const authConfig: NextAuthConfig = {
       if (!isProtected) return true;
       if (!isLoggedIn) return false;
       if (!auth.user.active) return false;
-      return canAccessRoute(auth.user.role as Role, path);
+      return canAccessRoute(auth.user.role as Role, path, auth.user.extraModules ?? []);
     },
     jwt({ token, user, trigger, session }) {
       if (user) {
         token.role = user.role;
         token.active = user.active;
+        token.extraModules = user.extraModules ?? [];
       }
       if (trigger === "update" && session) {
         Object.assign(token, session);
@@ -37,6 +38,7 @@ export const authConfig: NextAuthConfig = {
         session.user.impersonating = token.impersonating as boolean | undefined;
         session.user.originalUserId = token.originalUserId as string | undefined;
         session.user.originalUserName = token.originalUserName as string | undefined;
+        session.user.extraModules = token.extraModules as string[] | undefined;
       }
       return session;
     },

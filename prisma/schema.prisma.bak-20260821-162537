@@ -68,8 +68,6 @@ model User {
   profileShareComments ProfileShareComment[]
   profileRemarks       ProfileRemark[]
   paymentOffersCreated PaymentOffer[]
-  extraPermissions      EmployeePermission[] @relation("EmployeePermissionGrants")
-  extraPermissionsGiven EmployeePermission[] @relation("EmployeePermissionGrantedBy")
 
   @@index([role])
   @@index([email])
@@ -548,7 +546,6 @@ model Permission {
   action PermissionAction
 
   roles  RolePermission[]
-  employeeGrants EmployeePermission[]
 
   @@unique([module, action])
   @@map("permissions")
@@ -563,26 +560,6 @@ model RolePermission {
   @@unique([role, permissionId])
   @@index([role])
   @@map("role_permissions")
-}
-
-model EmployeePermission {
-  id           String     @id @default(cuid())
-
-  userId       String
-  user         User       @relation("EmployeePermissionGrants", fields: [userId], references: [id], onDelete: Cascade)
-
-  permissionId String
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
-  note         String?
-
-  grantedById  String?
-  grantedBy    User?      @relation("EmployeePermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
-  grantedAt    DateTime   @default(now())
-
-  @@unique([userId, permissionId])
-  @@index([userId])
-  @@map("employee_permissions")
 }
 
 enum LeadCallOutcome {

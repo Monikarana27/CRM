@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { getActiveGateway } from "@/lib/payments";
+import { completeOfferPayment } from "@/lib/payments/complete-offer";
 
 export async function POST(req: NextRequest) {
   let payload: Record<string, string> = {};
@@ -65,62 +66,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.redirect(new URL(`/pay/${offer.token}/failed`, req.url));
   }
 
-  await prisma.$transaction(async (tx) => {
-    let subscription = await tx.subscription.findFirst({
-      where: { profileId: offer.profileId, status: "ACTIVE" },
-      orderBy: { createdAt: "desc" },
-    });
-
-    if (!subscription) {
-      subscription = await tx.subscription.create({
-        data: {
-          profileId: offer.profileId,
-          planId: offer.planId,
-          status: "ACTIVE",
-        },
-      });
-    }
-
-    const payment = await tx.payment.create({
-      data: {
-        subscriptionId: subscription.id,
-        amount: offer.finalAmount,
-        method: "PAYU",
-        status: "PAID",
-        transactionId: result.gatewayTransactionId,
-        paidAt: new Date(),
-        currency: offer.currency,
-        createdById: offer.createdById,
-      },
-    });
-
-    await tx.paymentOffer.update({
-      where: { id: offer.id },
-      data: {
-        status: "PAID",
-        paidAt: new Date(),
-        paymentTransactionId: result.gatewayTransactionId,
-        paymentId: payment.id,
-      },
-    });
-
-    await tx.activityLog.create({
-      data: {
-        actorId: offer.createdById,
-        action: "PAYMENT_SUCCESS",
-        entityType: "PaymentOffer",
-        entityId: offer.id,
-      },
-    });
-
-    await tx.notification.create({
-      data: {
-        recipientId: offer.createdById,
-        type: "IMPORTANT_ANNOUNCEMENT",
-        content: `Payment Received: ${offer.profile.name} paid ₹${offer.finalAmount.toLocaleString("en-IN")} for ${offer.plan.name} Membership.`,
-      },
-    });
-  });
-
-  return NextResponse.redirect(new URL(`/pay/${offer.token}/success`, req.url));
+   await completeOfferPayment({ offerId: offer.id, gatewayTransactionId: result.gatewayTransactionId });
 }

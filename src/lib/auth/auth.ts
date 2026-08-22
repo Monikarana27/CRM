@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+﻿import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/db/prisma";
 import { verifyPassword } from "@/lib/auth/password";
@@ -28,25 +28,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         await prisma.loginEvent.create({ data: { userId: user.id } }).catch(() => {});
 
+        const extraGrants = await prisma.employeePermission.findMany({
+          where: { userId: user.id },
+          include: { permission: { select: { module: true } } },
+        });
+        const extraModules = Array.from(new Set(extraGrants.map((g) => g.permission.module)));
 
         return {
-
-
           id: user.id,
-
-
           name: user.name,
-
-
           email: user.email,
-
-
           role: user.role,
-
-
           active: user.active,
-
-
+          extraModules,
         };
       },
     }),

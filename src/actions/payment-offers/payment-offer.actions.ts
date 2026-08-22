@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
 import { getActingUserId } from "@/lib/auth/get-acting-user";
 import { generatePaymentToken } from "@/lib/payments/token";
-import { getActiveGateway } from "@/lib/payments";
+import { getActiveGateway, getGatewayByName } from "@/lib/payments";
 import { revalidatePath } from "next/cache";
 
 async function requireStaff() {
@@ -19,6 +19,7 @@ export async function createPaymentOfferAction(params: {
   discountType: "PERCENTAGE" | "FIXED";
   discountValue: number;
   expiresAt: string; // ISO date string from a datetime-local input
+  currency?: "INR" | "USD";
 }) {
   const session = await requireStaff();
 
@@ -65,6 +66,7 @@ export async function createPaymentOfferAction(params: {
       finalAmount,
       status: "ACTIVE",
       expiresAt,
+      currency: params.currency ?? "INR",
     },
   });
 
@@ -164,8 +166,12 @@ export async function initiateCheckoutAction(token: string) {
   if (offer.status === "CANCELLED") return { error: "This offer is no longer available" };
   if (offer.expiresAt < new Date()) return { error: "This offer has expired" };
 
-  const gateway = getActiveGateway();
+  // PayU only supports INR. PayPal handles USD. Route accordingly regardless
+  // of the globally configured default gateway.
+  const gateway = offer.currency === "USD" ? getGatewayByName("PAYPAL") : getActiveGateway();
   const origin = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+  const isPaypal = gateway.name === "PAYPAL";
 
   const order = await gateway.createOrder({
     offerId: offer.id,
@@ -173,8 +179,8 @@ export async function initiateCheckoutAction(token: string) {
     currency: offer.currency,
     customerName: offer.profile.name,
     customerEmail: offer.profile.email,
-    successRedirectUrl: `${origin}/api/webhooks/payu`,
-    failureRedirectUrl: `${origin}/api/webhooks/payu`,
+    successRedirectUrl: isPaypal ? `${origin}/pay/paypal-return` : `${origin}/api/webhooks/payu`,
+    failureRedirectUrl: isPaypal ? `${origin}/pay/paypal-return` : `${origin}/api/webhooks/payu`,
   });
 
   await prisma.paymentOffer.update({

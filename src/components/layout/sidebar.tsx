@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { NAV_CONFIG } from "@/config/navigation";
+import { NAV_CONFIG, EXTRA_ACCESS_NAV_ITEMS, type NavItem } from "@/config/navigation";
 import type { Role } from "@/lib/permissions/roles";
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -19,9 +19,22 @@ const ROLE_LABEL: Record<Role, string> = {
   HR: "Human Resources",
 };
 
-export function Sidebar({ role }: { role: Role }) {
+export function Sidebar({
+  role,
+  extraModules = [],
+}: {
+  role: Role;
+  extraModules?: string[];
+}) {
   const pathname = usePathname();
-  const items = NAV_CONFIG[role];
+  const baseItems = NAV_CONFIG[role];
+
+  const existingHrefs = new Set(baseItems.map((i) => i.href));
+  const extraItems: NavItem[] = EXTRA_ACCESS_NAV_ITEMS.filter(
+    (entry) => extraModules.includes(entry.module) && !existingHrefs.has(entry.item.href)
+  ).map((entry) => entry.item);
+
+  const items = [...baseItems, ...extraItems];
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex">
@@ -39,14 +52,14 @@ export function Sidebar({ role }: { role: Role }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "group relative flex items-center gap-3 rounded-lgpx-3 py-2 text-sm font-medium transition-all",
+                "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
                 isActive
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
               )}
             >
               {isActive && (
-                <span className="absolute left-0 top-1/2 h-4 w-0.5-translate-y-1/2 rounded-full bg-sidebar-primary" />
+                <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-sidebar-primary" />
               )}
               <Icon
                 className={cn(
@@ -61,7 +74,6 @@ export function Sidebar({ role }: { role: Role }) {
           );
         })}
       </nav>
-
     </aside>
   );
 }

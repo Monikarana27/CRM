@@ -1,42 +1,35 @@
-import { PrismaClient, Role, PermissionAction } from "@prisma/client";
+// Run once (and any time you add a module to permission-modules.ts):
+//   npx tsx prisma/seed-permissions.ts
+//
+// Safe to re-run — upserts on the (module, action) unique constraint,
+// so it never duplicates rows or touches existing RolePermission /
+// EmployeePermission grants.
+
+import { PrismaClient } from "@prisma/client";
+import { PERMISSION_MODULES } from "../src/lib/permissions/permission-modules";
+
 const prisma = new PrismaClient();
-const MODULES = ["Leads", "Conversion", "ProfileCreation", "Profiles", "Service", "Employees", "Settings", "Payments"];
-const MATRIX: Record<Role, Record<string, PermissionAction>> = {
-  SUPER_ADMIN: Object.fromEntries(MODULES.map((m) => [m, "FULL"]))as any,
-  ADMIN: {
-    Leads: "FULL", Conversion: "VIEW", ProfileCreation: "APPROVE",Profiles: "FULL",
-    Service: "ASSIGN", Employees: "FULL", Settings: "VIEW", Payments: "FULL",
-  },
-  SALES: { Leads: "EDIT", Conversion: "CREATE", Profiles: "VIEW" }as any,
-  SALES_TL: { Leads: "ASSIGN", Conversion: "CREATE", Profiles: "VIEW" } as any,
-  SALES_MANAGER: { Leads: "ASSIGN", Conversion: "APPROVE", Profiles: "EDIT" } as any,
-  PROFILE_CREATOR: { ProfileCreation: "CREATE", Profiles: "CREATE"} as any,
-  SERVICE: { Profiles: "VIEW", Service: "FULL" } as any,
-  SERVICE_TL: { Profiles: "VIEW", Service: "ASSIGN" } as any,
-  SERVICE_MANAGER: { Profiles: "EDIT", Service: "FULL" } as any,
-  HR: { Employees: "FULL" } as any,
-};
+
 async function main() {
-  for (const module of MODULES) {
-    for (const action of ["VIEW", "CREATE", "EDIT", "APPROVE", "ASSIGN", "FULL"] as PermissionAction[]) {
-      await prisma.permission.upsert({
+  let created = 0;
+  for (const { module, actions } of PERMISSION_MODULES) {
+    for (const action of actions) {
+      const result = await prisma.permission.upsert({
         where: { module_action: { module, action } },
         update: {},
         create: { module, action },
       });
+      created++;
+      void result;
     }
   }
-  for (const [role, modules] of Object.entries(MATRIX)) {
-    for (const [module, action] of Object.entries(modules)) {
-      const perm = await prisma.permission.findUnique({ where: { module_action: { module, action: action as PermissionAction } } });
-      if (!perm) continue;
-      await prisma.rolePermission.upsert({
-        where: { role_permissionId: { role: role as Role, permissionId: perm.id } },
-        update: {},
-        create: { role: role as Role, permissionId: perm.id },
-      });
-    }
-  }
-  console.log("Permission matrix seeded.");
+  console.log(`Permission catalog synced: ${created} module/action rows checked.`);
 }
-main().then(() => prisma.$disconnect());
+
+main()
+  .then(() => prisma.$disconnect())
+  .catch(async (e) => {
+    console.error(e);
+    await prisma.$disconnect();
+    process.exit(1);
+  });

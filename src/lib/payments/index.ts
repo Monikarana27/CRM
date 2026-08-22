@@ -1,10 +1,12 @@
 import { mockProvider } from "./providers/mock-provider";
 import { payuProvider } from "./providers/payu-provider";
+import { paypalProvider } from "./providers/paypal-provider";
 import type { PaymentGateway } from "./gateway";
 
 const PROVIDERS: Record<string, PaymentGateway> = {
   MOCK: mockProvider,
   PAYU: payuProvider,
+  PAYPAL: paypalProvider,
   // RAZORPAY: razorpayProvider,
   // CASHFREE: cashfreeProvider,
   // STRIPE: stripeProvider,
@@ -20,6 +22,12 @@ const ACTIVE_GATEWAY =
 export function getActiveGateway(): PaymentGateway {
   const provider = PROVIDERS[ACTIVE_GATEWAY];
   if (!provider) throw new Error(`Unknown payment gateway: ${ACTIVE_GATEWAY}`);
+  return provider;
+}
+
+export function getGatewayByName(name: string): PaymentGateway {
+  const provider = PROVIDERS[name];
+  if (!provider) throw new Error(`Unknown payment gateway: ${name}`);
   return provider;
 }
 
